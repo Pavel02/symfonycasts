@@ -1,0 +1,39 @@
+В templates добавим шаблон для страниц сайта.
+ Если сейчас обновить браузер, то будет прежняя страница.
+      Нужно удалить кэш симфони
+                    rm -rf var/cache/dev/*
+ Обычно не приходится задумываться о кеше. Symfony сама обнолляет его по мере необходимости.
+ Но выше мы вставили файл, у которого дата создания старее и Симфони думает, что изменений не было и значит не надо кеш пересоздавать.
+
+ Поместим в public/    каталоги и файлы  css/   fonts/   images/
+
+ Вообще в Symfony для css js используется webpack Encore но здесь для простоты будут обычные статическее файлы css.
+
+Для подключения css в файле base.html.twig   есть специальный блог   в  header
+            {% block stylesheets %}
+                <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+                <link rel="stylesheet" href="/css/font-awesome.css">
+                <link rel="stylesheet" href="/css/styles.css">
+            {% endblock %}
+
+здесь пути   /css/styles.css    корень это внутри  каталога   public
+
+
+В  PHPStorm  в плагине Symfony устанавливаем Web Directory  public , проверить, что плагин enable
+ тогда будет работать автоподстановка и в шаблоне твига получится
+                      {% block stylesheets %}
+                          <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+                          <link rel="stylesheet" href="{{ asset('css/font-awesome.css') }}">
+                          <link rel="stylesheet" href="{{ asset('css/styles.css') }}">
+                      {% endblock %}
+
+В шаблонизаторе twig есть функция  asset()   и когда мы поодключаем статические css js или изображение, то обарачиваем.
+Пример с изображением
+                 <img class="nav-profile-img rounded-circle" src="{{ asset('images/astronaut-profile.png') }}">
+
+
+ При этом она сейчас не работает нужно установить пакет.
+                              composer require asset
+
+
+

@@ -1,0 +1,64 @@
+Роуты - определяют URL для наших страниц.
+Контроллеры - функции, которые мы пишем, и которое реально определяют содержимое создаваемых страниц.
+
+Изначально Symfony небольшая роут-контроллер система.
+
+
+1. Роуты в файле ROUTES.yaml
+Пропишем первый маршрут в файле config/routes.yaml
+    index:
+        path: /
+        controller: App\Controller\ArticleController::homepage
+Маршрут задает URL-адрес и сообщает Symfony, какой метод контроллера выполнять.
+Например, маршрут выше означает, что при запросе пути / будем выполняться метод homepage в классе ArticleController
+
+/src/Controller/ArticleController.php - Создадим этот Контроллер
+  И в этом классе создадим метод
+            public function homepage()  {...}
+  этот метод является контроллером (экшеном) и местом, где будет строиться содержимое страницы.
+  Внутри экшена делаем все что угодно: запросы к БД , API вызовы и т.д.
+ЕДинственное правило: Контроллер должен возвращать объекта симфоневского класса     Response
+  Подойдет даже такое
+            return new Response('OMG! My first page already! WOOOO!');
+
+
+
+2. Роуты с помощью АННОТАЦИЙ.
+ Добавим нужную зависимость
+            composer require annotations
+
+ Теперь в контроллере экшены можно задавать например вот так
+             /**
+                 * @Route("/")
+                 */
+                public function homepage()
+                {
+                    return new Response('OMG! My first page already! WOOOO!');
+                }
+
+                 /**
+                 * @Route("/news/{slug}")
+                 */
+                public function show($slug)
+                {
+                    return new Response(sprintf(
+                        'Future page to show the article: "%s"',
+                        $slug
+                    ));
+                }
+
+ Проверить работу этих экшенов можно например вот так:
+          http://127.0.0.1:8000/
+          http://127.0.0.1:8000/news/why-asteroids-taste-like-tacos
+
+ Во втором экшене $slug будет корректно пробрасываться в нутрь метода обработки.
+
+
+
+
+
+При запуске пишет
+    2018-12-04T16:43:48+03:00 [info] User Deprecated: The "Sensio\Bundle\FrameworkExtraBundle\Configuration\Route" annotation is deprecated since version 5.2. Use "Symfony\Component\Routing\Annotation\Route" instead.
+
+
+

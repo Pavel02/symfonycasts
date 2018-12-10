@@ -1,0 +1,15 @@
+В Симфони есть еще больше инструментов для дебага.
+ Самый легкий способ это   symfony/debug-pack
+            composer require debug --dev
+ в этой зависимости по сути установится 6 библиотек одной командой.
+                      - Installing monolog/monolog (1.24.0): Loading from cache
+                      - Installing easycorp/easy-log-handler (v1.0.7): Loading from cache
+                      - Installing symfony/monolog-bridge (v4.1.8): Loading from cache
+                      - Installing symfony/monolog-bundle (v3.3.1): Loading from cache
+                      - Installing symfony/debug-bundle (v4.1.8): Loading from cache
+                      - Installing symfony/debug-pack (v1.0.6): Loading from cache
+
+Если нам не нужен какой-либо пакет
+            composer unpack debug
+
+unpack      команда     symfony Flex.

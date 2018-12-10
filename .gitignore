@@ -8,7 +8,7 @@
 ###< symfony/framework-bundle ###
 
 .idea/
-lessons/
+#lessons/
 ###> symfony/web-server-bundle ###
 /.web-server-pid
 ###< symfony/web-server-bundle ###

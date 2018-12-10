@@ -1,0 +1,51 @@
+генерация URL
+
+Чтобы в лоб не вписывать url например так
+            <a style="margin-left: 75px;" class="navbar-brand space-brand" href="/">The Space Bar</a>
+
+
+Чтобы увидеть все роуты в приложении, то вводим консольную утилиту
+                           bin/console debug:route
+ Будет например вот такой вывод результата
+                 -------------------------- -------- -------- ------ -----------------------------------
+                  Name                       Method   Scheme   Host   Path
+                 -------------------------- -------- -------- ------ -----------------------------------
+                  app_article_homepage       ANY      ANY      ANY    /
+                  app_article_show           ANY      ANY      ANY    /news/{slug}
+                  _twig_error_test           ANY      ANY      ANY    /_error/{code}.{_format}
+                  _wdt                       ANY      ANY      ANY    /_wdt/{token}
+                  _profiler_home             ANY      ANY      ANY    /_profiler/
+                  _profiler_search           ANY      ANY      ANY    /_profiler/search
+                  _profiler_search_bar       ANY      ANY      ANY    /_profiler/search_bar
+                  _profiler_phpinfo          ANY      ANY      ANY    /_profiler/phpinfo
+                  _profiler_search_results   ANY      ANY      ANY    /_profiler/{token}/search/results
+                  _profiler_open_file        ANY      ANY      ANY    /_profiler/open
+                  _profiler                  ANY      ANY      ANY    /_profiler/{token}
+                  _profiler_router           ANY      ANY      ANY    /_profiler/{token}/router
+                  _profiler_exception        ANY      ANY      ANY    /_profiler/{token}/exception
+                  _profiler_exception_css    ANY      ANY      ANY    /_profiler/{token}/exception.css
+                 -------------------------- -------- -------- ------ -----------------------------------
+
+  Каждый роут имеет свое имя. Так 2 верхних роута, их имена были сегнерированы приложением Symfony.
+
+  Можем сами указать в контролере в месте, где делали аннотации
+                /**
+                 * @Route("/", name="app_homepage")
+                 */
+                public function homepage()
+
+  Если снова посмотреть роуты в нашем приложении c помощью bin/console debug:route
+
+                   Name                       Method   Scheme   Host   Path
+                   -------------------------- -------- -------- ------ -----------------------------------
+                    app_homepage               ANY      ANY      ANY    /
+                    app_article_show           ANY      ANY      ANY    /news/{slug}
+
+  И теперь мы будем не жестко вписывать в код url а использовать гереацию по его имени href="{{ path('app_homepage') }}"
+            <a style="margin-left: 75px;" class="navbar-brand space-brand" href="{{ path('app_homepage') }}">The Space Bar</a>
+
+  Если у нас адрес использует slug, то
+        <a href="{{ path('article_show', { slug: 'why-asteroids-taste-like-bacon' }) }}">
+
+
+

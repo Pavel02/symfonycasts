@@ -1,0 +1,140 @@
+Фундаментальная основа Symfony сервисы
+
+Symfony можно рассматривать как набор полезных объектов
+        router object  -
+        twig object  - рендерит шаблоны
+        logger object  -  пишет логи
+и многие другие полезные объекты имя им Сервисы
+
+Идея проста - сервисы - любой объект, который работает.
+    генерация URL,
+    отправка email,
+    сохранение в БД и т.д.
+
+Symfony идет с большим количеством сервисов.
+
+
+В консоли выполним
+        tail -f var/log/dev.log
+теперь если обновим браузер, то увидим новые записи в этом логе выпонения приложения
+
+
+Service Autowiring   автоматическое связывание
+    Так например в методе контролера и в его теле мы запишем
+                public function toggleArticleHeart(LoggerInterface $logger)
+                {
+                    $logger->info('Article is being hearted!');
+
+Внутри метода нам станет доступен объект Logger !
+
+Перед выполнением метода Symfony анализирует каждый предеаваемый аргумент, и по указанному тайп хинту , понимает, что мы желаем
+   объект класса LoggerInterface .
+
+
+В консоли набираем
+        bin/console debug:autowiring
+Нас ждет список доступных сервисов, которые мы можем получать, используя тайп хинт
+
+Autowirable Services
+====================
+
+ The following classes & interfaces can be used as type-hints when autowiring:
+
+ --------------------------------------------------------------------------
+  App\Controller\ArticleController
+  Doctrine\Common\Annotations\Reader
+      alias to annotations.cached_reader
+  EasyCorp\EasyLog\EasyLogHandler
+  Psr\Cache\CacheItemPoolInterface
+      alias to cache.app
+  Psr\Container\ContainerInterface
+      alias to service_container
+  Psr\Log\LoggerInterface
+      alias to monolog.logger
+  Psr\SimpleCache\CacheInterface
+      alias to cache.app.simple
+  SensioLabs\Security\Command\SecurityCheckerCommand
+  SensioLabs\Security\SecurityChecker
+  SessionHandlerInterface
+      alias to session.handler
+  Symfony\Bundle\FrameworkBundle\Controller\RedirectController
+  Symfony\Bundle\FrameworkBundle\Controller\TemplateController
+  Symfony\Component\Asset\Packages
+      alias to assets.packages
+  Symfony\Component\Cache\Adapter\AdapterInterface
+      alias to cache.app
+  Symfony\Component\DependencyInjection\ContainerInterface
+      alias to service_container
+  Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface
+      alias to parameter_bag
+  Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface
+      alias to parameter_bag
+  Symfony\Component\EventDispatcher\EventDispatcherInterface
+      alias to debug.event_dispatcher
+  Symfony\Component\Filesystem\Filesystem
+      alias to filesystem
+  Symfony\Component\HttpFoundation\RequestStack
+      alias to request_stack
+  Symfony\Component\HttpFoundation\Session\Flash\FlashBagInterface
+      alias to session.flash_bag
+  Symfony\Component\HttpFoundation\Session\SessionInterface
+      alias to session
+  Symfony\Component\HttpFoundation\Session\Storage\SessionStorageInterface
+      alias to session.storage.native
+  Symfony\Component\HttpKernel\Config\FileLocator
+      alias to file_locator
+  Symfony\Component\HttpKernel\Debug\FileLinkFormatter
+      alias to debug.file_link_formatter
+  Symfony\Component\HttpKernel\HttpKernelInterface
+      alias to http_kernel
+  Symfony\Component\HttpKernel\KernelInterface
+      alias to kernel
+  Symfony\Component\Routing\Generator\UrlGeneratorInterface
+      alias to router.default
+  Symfony\Component\Routing\Matcher\UrlMatcherInterface
+      alias to router.default
+  Symfony\Component\Routing\RequestContext
+      alias to router.request_context
+  Symfony\Component\Routing\RequestContextAwareInterface
+      alias to router.default
+  Symfony\Component\Routing\RouterInterface
+      alias to router.default
+  Symfony\Component\Stopwatch\Stopwatch
+      alias to debug.stopwatch
+  Twig\Environment
+      alias to twig
+  Twig_Environment
+      alias to twig
+ --------------------------------------------------------------------------
+
+
+И при установке новых пакетов, все больше сервисов нам будет доступно, и мы увидим их в этом списке доступных.
+
+Например мы ренедерили шаблон так
+                  return $this->render('article/show.html.twig', [
+                        'title' => ucwords(str_replace('-', ' ', $slug)),
+                        'slug' => $slug,
+                        'comments' => $comments,
+                    ]);
+
+Для примера используем сервис Twig передав его аргмуентом в метод.
+                    /**
+                     * @Route("/news/{slug}", name="article_show")
+                     */
+                    public function show($slug, Environment $twigEnviroment)
+                    {
+                        $comments = [
+                            'I ate a normal rock once. It did NOT taste like bacon!',
+                            'Woohoo! I\'m going on an all-asteroid diet!',
+                            'I like bacon too! Buy some from my site! bakinsomebacon.com',
+                        ];
+
+                        $html = $twigEnviroment->render('article/show.html.twig', [
+                            'title' => ucwords(str_replace('-', ' ', $slug)),
+                            'slug' => $slug,
+                            'comments' => $comments,
+                        ]);
+
+                        return new Response($html);
+                    }
+Конечно в реал проекте используем   $this->render     он делает все это за нас.

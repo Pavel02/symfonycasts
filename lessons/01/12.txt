@@ -1,0 +1,69 @@
+JSON API Endpoint
+
+Есть изображение сердечка, нажав на которое можно лайкнуть определенную статью.
+ На сервер отправляется AJAX запрос, который обновляет в БД кол-во лйков статьи. И это АПИ должно возваащать в ответ новое кол-во лайков.
+
+В класс ArticleController добавим экшн
+
+            /**
+             * @Route("/news/{slug}/heart", name="article_toggle_heart")
+             */
+            public function toggleArticleHeart()
+            {
+                // TODO actually heart/unheart the article
+
+                return new JsonResponse(['hearts' => rand(5, 100)]);
+            }
+
+теперь перейдя по адресу     http://127.0.0.1:8000/news/why-asteroids-taste-like-bacon/heart
+  нам будет возвращаться
+                {"hearts":81}
+
+
+Хорошей практикой для таких АПИ является получение данных методом Post. Добавим в аннотацию к экшену.
+                /**
+                 * @Route("/news/{slug}/heart", name="article_toggle_heart", methods={"POST"})
+                 */
+                public function toggleArticleHeart()
+
+Теперь если перейдем, по адресу  http://127.0.0.1:8000/news/why-asteroids-taste-like-bacon/heart  то увидим ошибку, что метод GET не валиден.
+
+
+Если посмотрим какие, роуты есть в нашем приложении,
+                bin/console debug:route
+
+то часть вывода будет такой:
+                -------------------------- -------- -------- ------ -----------------------------------
+                  Name                       Method   Scheme   Host   Path
+                 -------------------------- -------- -------- ------ -----------------------------------
+                  app_homepage               ANY      ANY      ANY    /
+                  article_show               ANY      ANY      ANY    /news/{slug}
+                  article_toggle_heart       POST     ANY      ANY    /news/{slug}/heart
+                  _twig_error_test           ANY      ANY      ANY    /_error/{code}.{_format}
+                  _wdt                       ANY      ANY      ANY    /_wdt/{token}
+
+Для нашего API только метод POSt.
+
+Теперь в нашем шаблоне добавим
+
+                                <span class="pl-2 article-details">
+                                    <span class="js-like-article-count">5</span>
+                                    <a href="{{ path('article_toggle_heart', {slug: slug}) }}" class="fa fa-heart-o like-article js-like-article"></a>
+                                </span>
+
+и в экшене контрлера надо передавать $slug в рендеринг шаблона
+                        return $this->render('article/show.html.twig', [
+                            'title' => ucwords(str_replace('-', ' ', $slug)),
+                            'slug' => $slug,
+                            'comments' => $comments,
+                        ]);
+
+
+Осталось только в JS  сделать отправку AJAX на этот апи
+                    $.ajax({
+                        method: 'POST',
+                        url: $link.attr('href')
+                    }).done(function(data) {
+                        $('.js-like-article-count').html(data.hearts);
+                    })
+
