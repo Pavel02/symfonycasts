@@ -1,0 +1,159 @@
+Updating an Entity with New Fields
+
+В сущность Article добавим 3 новых поля.
+ Можно их добавить вручную.
+
+
+*** Generating New Fields into the Entity ***
+
+В консоли выполним
+            php bin/console make:entity
+  и вводим уже существующию сущность, чтобы обновить.
+                Article
+ Далее через консоль вводим значения новых полей
+                         Class name of the entity to create or update (e.g. AgreeableGnome):
+                         > Article
+
+                         Your entity already exists! So let's add some new fields!
+
+                         New property name (press <return> to stop adding fields):
+                         > author
+
+                         Field type (enter ? to see all types) [string]:
+                         > string
+
+                         Field length [255]:
+                         >
+
+                         Can this field be null in the database (nullable) (yes/no) [no]:
+                         >
+
+                         updated: src/Entity/Article.php
+
+                         Add another property? Enter the property name (or press <return> to stop adding fields):
+                         > heartCount
+
+                         Field type (enter ? to see all types) [string]:
+                         > integer
+
+                         Can this field be null in the database (nullable) (yes/no) [no]:
+                         >
+
+                         updated: src/Entity/Article.php
+
+                         Add another property? Enter the property name (or press <return> to stop adding fields):
+                         > imageFilename
+
+                         Field type (enter ? to see all types) [string]:
+                         >
+
+                         Field length [255]:
+                         >
+
+                         Can this field be null in the database (nullable) (yes/no) [no]:
+                         > yes
+
+                         updated: src/Entity/Article.php
+
+                         Add another property? Enter the property name (or press <return> to stop adding fields):
+                         >
+
+
+
+                          Success!
+
+
+                         Next: When you're ready, create a migration with make:migration
+
+Для примера пока что будут использованы уже имеющиеся изображения в    /public/images.
+
+Теперь в классе Article появились 3 новых свойства и к ним сетеры-гетеры
+               /**
+                 * @ORM\Column(type="string", length=255)
+                 */
+                private $author;
+
+                /**
+                 * @ORM\Column(type="integer")
+                 */
+                private $heartCount;
+
+                /**
+                 * @ORM\Column(type="string", length=255, nullable=true)
+                 */
+                private $imageFilename;
+
+После внесения изменений нам требуется создать новый файл миграции
+                        php bin/console make:migration
+
+
+                          Success!
+
+
+                         Next: Review the new migration "src/Migrations/Version20190109134535.php"
+                         Then: Run the migration with php bin/console doctrine:migrations:migrate
+                         See https://symfony.com/doc/current/bundles/DoctrineMigrationsBundle/index.html
+И на последнем шаге применяем миграцию к БД
+                php bin/console doctrine:migration:migrate
+
+                                    Application Migrations
+
+
+                WARNING! You are about to execute a database migration that could result in schema changes and data loss. Are you sure you wish to continue? (y/n)y
+                Migrating up to 20190109134535 from 20181228130836
+
+                  ++ migrating 20190109134535
+
+                     -> ALTER TABLE article ADD author VARCHAR(255) NOT NULL, ADD heart_count INT NOT NULL, ADD image_filename VARCHAR(255) DEFAULT NULL
+
+                  ++ migrated (0.8s)
+
+                  ------------------------
+
+                  ++ finished in 0.8s
+                  ++ 1 migrations executed
+                  ++ 1 sql queries
+
+
+
+*** Field Default Value ***
+ Одному из полей в Article установим значение по умолчанию для обязательного поля
+
+                /**
+                 * @ORM\Column(type="integer")
+                 */
+                private $heartCount = 0;
+
+
+*** Using the new Fields ***
+
+В метод класса     ArticleAdminController   добавим заполнение новых полей в Таблицу
+           $article->setAuthor('Mike Marcony')
+               ->setHeartCount(rand(5, 100))
+               ->setImageFilename('asteroid.jpeg');
+ На данный момент в таблице уже есть записи с пустыми новыми полями. Чтобы не морочиться можно просто очистить всю таблицу.
+  Для этого в консоли
+            php bin/console doctrine:query:sql "TRUNCATE TABLE article"
+            int(0)
+
+ Воспользуемся нашим роутом для создания обновленных статей
+                http://127.0.0.1:8000/admin/article/new
+
+
+
+*** Updating the Templates ***
+ В шаблоны twig подправим значения из БД.
+   Для пути к изображению можно так:
+                    src="{{ asset('images/'~article.imageFilename) }}">
+  А можно в   /src/entity/Article     добавить метод
+                                public function getImagePath()
+                                {
+                                    return 'images/' . $this->getImageFilename();
+                                }
+  и потом в шаблоне обрашать через псевдо свойство (twig норм отработает).
+            <img class="show-article-img" src="{{ asset(article.imagePath) }}">
+
+
+
+
+

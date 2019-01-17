@@ -1,0 +1,62 @@
+Sluggable & other Wonderful Behaviors
+
+ Сейчас Faker используется для генерации случайных   slug  и они не соотносятся с title.
+
+ Библиотека DoctrineExtension содержит много поведений для сущностей, например:
+   sluggable - для генерации slug из другого поля.
+   Loggable - отслеживает изменения сущностей.
+   Blameable - записывает какой пользователь создал или изменил Entity.
+
+*** Installing StofDoctrineExtensionsBundle ***
+ Установим через Бандл
+  в консоли
+            composer require stof/doctrine-extensions-bundle
+  во время установки будет:
+        Symfony operations: 1 recipe (2f9e32672208f3b935d61b506d028743)
+          -  WARNING  stof/doctrine-extensions-bundle (>=1.2): From github.com/symfony/recipes-contrib:master
+            The recipe for this package comes from the "contrib" repository, which is open to community contributions.
+            Review the recipe at https://github.com/symfony/recipes-contrib/tree/master/stof/doctrine-extensions-bundle/1.2
+
+            Do you want to execute this recipe?
+            [y] Yes
+            [n] No
+            [a] Yes for all packages, only for the current installation session
+            [p] Yes permanently, never ask again for this project
+         (defaults to n):
+
+
+*** Contrib Recipes ***
+
+ Symfony имеет два репозитория для рецептов.
+   Первый имеет тщательный контроль за качеством,
+   Второй   "contrib"  сообщество свободно вносит рецепты.
+
+
+*** Configuring Sluggable ***
+ В файле настроек   /config/packages/stof_doctrine_extensions.yaml   для этого пакета включим     sluggable,    добавив
+                # Read the documentation: https://symfony.com/doc/current/bundles/StofDoctrineExtensionsBundle/index.html
+                # See the official DoctrineExtensions documentation for more details: https://github.com/Atlantic18/DoctrineExtensions/tree/master/doc/
+                stof_doctrine_extensions:
+                    default_locale: en_US
+                    orm:
+                        default:
+                            sluggable: true
+
+ И чтобы заработало надо в сущности /src/Entity/Article.php   добавить аннотацию
+                use Gedmo\Mapping\Annotation as Gedmo;
+
+                /**
+                 * @ORM\Column(type="string", length=100, unique=true)
+                 * @Gedmo\Slug(fields={"title"})
+                 */
+                private $slug;
+
+
+*** Hello Doctrine Events ***
+ Если возникнет потребность делать что-то автоматические при   добавлении/изменении сущности, то
+  поможет  Система событий Доктрины.
+
+
+
+
+

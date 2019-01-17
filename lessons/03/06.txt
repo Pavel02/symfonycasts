@@ -1,0 +1,81 @@
+Fun with Twig Extensions!
+
+После предыдущих изменений мы перестали использовать   /src/Service/MarkdownHelper.php
+ в котором мы кешировали обработку Markdown.
+
+ Хотелось бы продолжить использовать фильтр markdown из twig , но чтобы он использовал наш Сервис MarkdownHelper.
+ Можно создать свой фильтр для  Twig, назовем cached_markdown.
+
+
+*** Generating a Twig Extension ***
+ Нужно создать Twig extension
+ В консоли набираем команду
+                php bin/console make:twig-extension
+  Результат работы
+                         The name of the Twig extension class (e.g. AppExtension):
+                         > AppExtension
+
+                         created: src/Twig/AppExtension.php
+
+                          Success!
+
+
+                         Next: Open your new extension class and start customizing it.
+                         Find the documentation at http://symfony.com/doc/current/templating/twig_extension.html
+ В результате будет создан файл     /src/twig/AppExtension.php
+
+ Обычно можно создавать единственный файл, где будут все пользовательские фильтры для  twig.  просто для удобства.
+
+ В созданном файле       /src/twig/AppExtension.php   удаляем метод  getFunctions().
+ В результате получим  класс вида
+                    <?php
+
+                    namespace App\Twig;
+
+                    use App\Service\MarkdownHelper;
+                    use Twig\Extension\AbstractExtension;
+                    use Twig\TwigFilter;
+                    use Twig\TwigFunction;
+
+                    class AppExtension extends AbstractExtension
+                    {
+                        private $helper;
+
+                        public function __construct(MarkdownHelper $helper)
+                        {
+                            $this->helper = $helper;
+                        }
+
+                        public function getFilters(): array
+                        {
+                            return [
+                                // If your filter generates SAFE HTML, you should add a third
+                                // parameter: ['is_safe' => ['html']]
+                                // Reference: https://twig.symfony.com/doc/2.x/advanced.html#automatic-escaping
+                                new TwigFilter('cached_markdown', [$this, 'processMarkdown'], ['is_safe' => ['html']]),
+                            ];
+                        }
+
+                        public function processMarkdown($value)
+                        {
+                            return $this->helper->parse($value);
+                        }
+                    }
+
+ Теперь в шаблоне исправим (будем использовать наш новый пользовательский фильтр)
+                                             <div class="article-text">
+                                                {{ article.content | markdown }}
+                                            </div>
+   применим новый фильтр
+                  <div class="article-text">
+                    {{ article.content | cached_markdown }}
+                  </div>
+
+
+
+
+
+
+
+
+

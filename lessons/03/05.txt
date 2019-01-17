@@ -1,0 +1,88 @@
+Querying for Data!
+
+DoctrineBundle предоставляет нам Сервис EntityManager, который может сохранять и извлекать данные.
+
+ Сейчас метод show()  котролера  ArticleControler рендерит жестко захаркоденный код.
+ Передадим в него зависимостью EntityManagerInterface  $em
+
+ Для получения данных из БД  1-й шаг всегда одинаков - нам требуется получить репозиторий для сущности
+            $repository = $em->getRepository(Article::class);
+
+  Этот объект репозитория знает о том как делать запросы к таблице Article.
+   и используется как
+            $article = $repository->.....
+   и уже имеются встроенные методы
+         find()   - принимает  id  и возвращает 1 строку с этим id.
+         findAll()
+         findBy()    - возвращает ВСЕ статьи, где поле соответствует некоторому значению.
+         findOneBy()   - возвращает ОДНУ статьи, где поле соответствует некоторому значению.
+
+ Например запросим статью по ее   slug  и сверху укажем, что это объект класса.
+                $repository = $em->getRepository(Article::class);
+                 /** @var Article $article */
+                $article = $repository->findOneBy(['slug' => $slug]);
+
+  Вернется Одна строка, где поле  slug  будет соответстовать этому значению.
+  "Доктрина возвращает объекты. Это суть доктрины, что не требуется думать о вставке и выборе строк из БД "
+   Вместо этого думайте о сохранении и извлечении объектов, как будто вы не в курсе, что работаете с БД.
+
+
+*** Handling 404's ***
+
+ Если в БД нет статьи с переданным  {slug} , то $article   будет  null.
+                    if (!$article) {
+                        throw $this->createNotFoundException(sprintf('No article for slug "%s"', $slug));
+                    }
+
+ Если распечатать  dd($article)  мы увидим что Doctrine нам передала туда объект класса
+            Article {#571 ▼
+              -id: 6
+              -title: "Why Asteroids Taste Like Bacon"
+              -slug: "why-asteroids-taste-like-bacon-456"
+              -content: """
+                Spicy **jalapeno bacon** ipsum dolor amet veniam shank in dolore. Ham hock nisi landjaeger cow,\n
+                lorem proident [beef ribs](https://baconipsum.com/) aute enim veniam ut cillum pork chuck picanha. Dolore reprehenderit\n
+                labore minim pork belly spare ribs cupim short loin in. Elit exercitation eiusmod dolore cow\n
+                **turkey** shank eu pork belly meatball non cupim.\n
+                \n
+                Laboris beef ribs fatback fugiat eiusmod jowl kielbasa alcatra dolore velit ea ball tip. Pariatur\n
+                laboris sunt venison, et laborum dolore minim non meatball. Shankle eu flank aliqua shoulder,\n
+                capicola biltong frankfurter boudin cupim officia. Exercitation fugiat consectetur ham. Adipisicing\n
+                picanha shank et filet mignon pork belly ut ullamco. Irure velit turducken ground round doner incididunt\n
+                occaecat lorem meatball prosciutto quis strip steak.\n
+                \n
+                Meatball adipisicing ribeye bacon strip steak eu. Consectetur ham hock pork hamburger enim strip steak\n
+                mollit quis officia meatloaf tri-tip swine. Cow ut reprehenderit, buffalo incididunt in filet mignon\n
+                strip steak pork belly aliquip capicola officia. Labore deserunt esse chicken lorem shoulder tail consectetur\n
+                cow est ribeye adipisicing. Pig hamburger pork belly enim. Do porchetta minim capicola irure pancetta chuck\n
+                fugiat.
+                """
+              -publishedAt: DateTime @1540489874 {#569 ▼
+                date: 2018-10-25 20:51:14.0 Europe/Moscow (+03:00)
+              }
+            }
+
+Также больше информации  Just Google for "Symfony customize error pages" and... have fun! You can create separate pages for 404 errors, 403 errors, 500 errors, or whatever your heart desires.
+
+Таким образом в контролере в методе show()
+        $repository = $em->getRepository(Article::class);
+        /** @var Article $article */
+        $article = $repository->findOneBy(['slug' => $slug]);
+        if (!$article) {
+            throw $this->createNotFoundException(sprintf('No article for slug "%s"', $slug));
+        }
+// получаем репозиторий, ищем одну статью по   slug .  если  статью не нашли , то сообщение об ошибке.
+
+               $html = $this->render('article/show.html.twig', [
+                    'article' => $article,
+                    'comments' => $comments,
+                ]);
+//ну а в рендеринг теперь передаем сразу  объект статьи и там уже работаем с ним через шаблонизатор ($comments пока что останется захардкоден).
+
+проверяем например по такому url
+    http://127.0.0.1:8000/news/why-asteroids-taste-like-bacon-456
+
+
+Также все запросы к БД, которые выполнялись при формировании страницы можно увидеть в панели Дебаг.
+
+

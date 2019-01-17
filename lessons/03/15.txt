@@ -1,0 +1,74 @@
+Using Faker for Seeding Data
+
+Пока что содержание статьи одинаковое во всех статьях.
+
+***  Installing Faker ***
+
+ Используем  fzaninotto/faker
+ Можно использовать для создания случайных - имен, адреса, текст, случайные буквы, цифры, уличные коды и даже выигрышные номера в лотерее.
+  В консоли
+                composer require fzaninotto/faker --dev
+
+ В базовый абстрактный класс инициализируем свойство с объетом для дальнейшего использования.
+                abstract class BaseFixture extends Fixture
+                {
+                    private $manager;
+                    protected $faker;
+                    public function load(ObjectManager $manager)
+                    {
+                        $this->manager = $manager;
+                        $this->faker = Factory::create();
+                        ..........................
+
+*** Generating Fake Data ***
+
+  В классе /src/DataFixtures.php    в условие, опубликована ли статья добавим метод, принимающий процент успеха возврата  true (ниже 70% получить true)
+                    // publish most articles
+                    if ($this->faker->boolean(70)) {
+                        $article->setPublishedAt(new \DateTime(sprintf('-%d days', rand(1, 100))));
+                    }
+   Здесь же заменим длинное выражение для создания случайной даты.
+                            // publish most articles
+                            if ($this->faker->boolean(70)) {
+                                $article->setPublishedAt($this->faker->dateTimeBetween('-100 days', '-1 days'));
+                            }
+   Заиспользуем Faker и для генерации лайков
+                     $article->setAuthor('Mike Marcony')
+                        ->setHeartCount($this->faker->numberBetween(5, 100))
+                        ...............................
+
+  Также Faker имеет имеет методы для генерации Title, Names и даже Images.
+
+
+*** Generating Controller, Realistic Data ***
+  Вместо того, чтобы делать совершенно рандомные данные мы будим генерить из своих приближенных.
+   В классе /src/DataFixtures/ArticleFixtures.php  создадим 3 статических свойства
+                 private static $articleTitles = [
+                     'Why Asteroids Taste Like Bacon',
+                     'Life on Planet Mercury: Tan, Relaxing and Fabulous',
+                     'Light Speed Travel: Fountain of Youth or Fallacy',
+                 ];
+                 private static $articleImages = [
+                     'asteroid.jpeg',
+                     'mercury.jpeg',
+                     'lightspeed.png',
+                 ];
+                 private static $articleAuthors = [
+                     'Mike Ferengi',
+                     'Amy Oort',
+                 ];
+
+   Faker также нам поможет выбирать случайные значения из этих массивов.
+    Для slug  также имеется метод
+             $this->createMany(Article::class, 10, function(Article $article, $count) {
+                $article->setTitle($this->faker->randomElement(self::$articleTitles))
+                    ->setSlug($this->faker->slug)
+                        ..........................
+   также для имени Автора и изображения
+                  $article->setAuthor($this->faker->randomElement(self::$articleAuthors))
+                    ->setHeartCount($this->faker->numberBetween(5, 100))
+                    ->setImageFilename($this->faker->randomElement(self::$articleImages))
+                  ;
+
+   Загрузка фикстур
+             bin/console doctrine:fixtures:load

@@ -1,0 +1,81 @@
+Custom Queries
+
+В Доктрине кончено можно писать пользовательские запросы на чистом SQL.
+ Но Доктрина может работать с различными СУБД и для универсализма имеет свой Doctrine Query Language.
+ Это SQL подобный язык, но вместо таблиц и полей будут классы и свойства. ))
+ Происходит работа не с БД, а с сохранением и извлечением объектов.
+
+
+*** Introducing: The Query Builder ***
+ Когда требуется написать пользовательский запрос, то можно это сделать напрямую используя DQL,
+  но удобнее использовать query bilder, помогающий создать DQL-строку.
+ Для примера:
+                return $this->createQueryBuilder('a')
+                    ->andWhere('a.exampleField = :val')
+                    ->setParameter('val', $value)
+                    ->orderBy('a.id', 'ASC')
+                    ->setMaxResults(10)
+                    ->getQuery()
+                    ->getResult()
+                ;
+  при этом эти методы можно применять в любом порядке.
+
+По рекомендации автора, советует использовать   ->andWhere()   Doctrine построит как надо строку.
+
+Для вставки динамических переменных, для предотвращения SQL инъекций:
+                return $this->createQueryBuilder('a')
+                            ->andWhere('a.exampleField = :val')
+                            ->setParameter('val', $value)
+
+*** Writing our Custom Query ***
+  DQL похож на SQL, например вот так будет корректно работать:
+                            ->andWhere('a.publishedAt IS NULL OR a.publishedAt > NOW()')
+   здесь   а.*  - alias     равносильно чистому  SQL   (SELECT a.* FROM article AS a)
+
+  например сортировка
+            ->orderBy('a.publishedAt', 'DESC')
+    конечно в Таблице имя поля  published_at , но Доктрина работает через свойства объекта.
+
+  И в самом конце при построении SQL запроса, чтобы получить массив объектов
+                           ->getQuery()
+                            ->getResult();
+
+ для получения одного объекта
+                    ->getQuery()
+                    ->getOneOrNullResult()
+
+ Соответственно пользовательский запрос для получения только опубликованных статей
+                    public function findAllPublishedOrderedByNewest()
+                    {
+                        return $this->createQueryBuilder('a')
+                            ->andWhere('a.publishedAt IS NOT NULL')
+                            ->orderBy('a.publishedAt', 'DESC')
+                            ->getQuery()
+                            ->getResult();
+                    }
+
+  и в экшене контролера, теперь используем его
+                        $repository = $em->getRepository(Article::class);
+                        $articles = $repository->findAllPublishedOrderedByNewest();
+
+
+*** Autowiring ArticleRepository ***
+  Сейчас экшн контроллера принимает Сервис EntityManager , а потом получает репозиторий.
+                   public function homepage(EntityManagerInterface $em)
+                    {
+                        $repository = $em->getRepository(Article::class);
+                        $articles = $repository->findAllPublishedOrderedByNewest();
+                    .................
+
+ Но можно сразу передавать зависимостью нужный репозиторий
+                 public function homepage(ArticleRepository $repository)
+                    {
+                        $articles = $repository->findAllPublishedOrderedByNewest();
+                        ......................
+
+  Все благодаря тому, что все Репозитории автоматически регистрируются как Сервисы в Контейнере.
+
+
+ Подробнее про DQL https://symfonycasts.com/screencast/doctrine-queries
+
+

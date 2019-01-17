@@ -1,0 +1,46 @@
+Leveraging the prod Environment
+
+
+В файле  .env  можем менять режим на  prod
+
+# ...
+APP_ENV=prod
+
+
+Во время режима  prod  внутренний Кэш Симфони автоматически не пересоздается.
+Это значит, что вовремя каждого нового деплоя требуется выполнить иначе изменения могут не отобразиться.
+(сделано, чтобы на проде Симфони работала быстро).
+        ./bin/console cache:clear
+
+Также в режиме   prod  не будет панели отладки и другой технической информации.
+
+Стоит отметить, что в директории var/cache 2 каталога   dev  и  prod . Свой кэш для каждого из режимов.
+
+Также есть команда консоли для всех файлов?
+            ./bin/console cache:warmup
+
+
+Сейчас в конфиг файле config/packages/framework.yaml  указано, что используем кэш  app: cache.adapter.apcu
+            cache:
+                # Put the unique name of your app here: the prefix seed
+                # is used to compute stable namespaces for cache keys.
+                #prefix_seed: your_vendor_name/app_name
+
+                # The app cache caches to the filesystem by default.
+                # Other options include:
+
+                # Redis
+                #app: cache.adapter.redis
+                #default_redis_provider: redis://localhost
+
+                # APCu (not recommended with heavy random-write workloads as memory fragmentation can cause perf issues)
+                app: cache.adapter.apcu
+
+Но мы можем захотеть в режиме   dev  использовать кэш файловой системы (для простоты использования, а на prod например  Redis))
+  Решение простое переопределим этот ключ для режима  dev.
+    Создаем файл      config/packages/dev/framework.yaml   и внутри укажем.
+        framework:
+          cache:
+            app: cache.adapter.filesystem
+
+  Теперь для разных режимов работы приложения будет использоваться разные виды хранения кэша.

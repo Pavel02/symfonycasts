@@ -1,0 +1,125 @@
+When Migrations Fail
+
+*** Adding the createdAt & updatedAt Fields ***
+  Добавим с помощью консольной команды
+         bin/console make:entity
+                 Class name of the entity to create or update (e.g. DeliciousPizza):
+                 > Article
+
+                 Your entity already exists! So let's add some new fields!
+
+                 New property name (press <return> to stop adding fields):
+                 > createdAt
+
+                 Field type (enter ? to see all types) [datetime]:
+                 >
+
+                 Can this field be null in the database (nullable) (yes/no) [no]:
+                 >
+
+                 updated: src/Entity/Article.php
+
+                 Add another property? Enter the property name (or press <return> to stop adding fields):
+                 > updatedAt
+
+                 Field type (enter ? to see all types) [datetime]:
+                 >
+
+                 Can this field be null in the database (nullable) (yes/no) [no]:
+                 >
+
+                 updated: src/Entity/Article.php
+
+                 Add another property? Enter the property name (or press <return> to stop adding fields):
+                 >
+
+
+
+                  Success!
+
+
+                 Next: When you're ready, create a migration with make:migration
+
+  Создадим файл миграции для изменившейся сущности
+         bin/console make:migration
+
+  Применим миграцию
+          php bin/console doctrine:migrations:migrate
+
+
+*** When a Migration Fails ***
+
+ Команда выше закончится ошибкой
+          SQLSTATE[22007]: Invalid datetime format: 1292 Incorrect datetime value: '0000-00-00 00:00:00' for column 'created_at'
+           at row 1
+
+  В нашей таблице уже есть статьи, и когда MySql пытается создать новый столбец типа datetime, который не может быть null,
+   то ему трудно понять какое подставлять значение.
+
+ В файле миграции   /src/Migrations/Version......php   сейчас имеется фрагмент кода
+                                $this->addSql('ALTER TABLE article ADD created_at DATETIME NOT NULL, ADD updated_at DATETIME NOT NULL');
+
+   вручную отредактируем, что по умолчанию  NULL и второй строчкой обновим на текущее время.
+                $this->addSql('ALTER TABLE article ADD created_at DATETIME DEFAULT NULL, ADD updated_at DATETIME DEFAULT NULL');
+                $this->addSql('UPDATE article SET created_at = NOW(), updated_at = NOW()');
+
+ Отметить нужно, что старая миграция содержала только одну строку SQL, и она не выполнилась,
+  поэтому в нашем случае мы можем просто применить миграцию снова.
+ Но может быть ситуация, что
+  будет 3 строки SQL, и первые 2 будут успешные, а с ошибкой завершится 3-я.
+   Если снова выполнить миграцию, то первые 2 строки попробуют выполниться еще раз и возможно закончатся неудачей.
+
+
+ Вариантом, может быть полное удаление БД и применение миграций с самого начала.
+                php bin/console doctrine:database:drop --force
+  затем
+              php bin/console doctrine:database:create
+  а потом снова применить миграции.
+             php bin/console doctrine:migrations:migrate
+
+Но в нашем случае выше. была неотработана всего лишь одна строка, поэтому можем сделать сразу
+            bin/console doctrine:fixtures:load
+ После успеха можем создать новую миграцию в ней 2 этих поля уже выставятся в NOT NULL
+    (это произойдет, потому что ранее командой    make:entity  в сущность  Article  были добавлены эти 2 свойства, а в таблице
+     нет соответсвующих полей)
+                      php bin/console make:migration
+
+  создатся миграция содержащая
+             $this->addSql('ALTER TABLE article CHANGE created_at created_at DATETIME NOT NULL, CHANGE updated_at updated_at DATETIME NOT NULL');
+
+  и уже ее применим, чтобы добиться нужного изначально результата.
+            php bin/console doctrine:migrations:migrate
+
+=========================================================
+В комментариях есть хороший вопрос, про то: что делать если Fail произойдет на продакшене?
+            Дмитрий Ченгаев • 8 months ago
+            What about if migrations fail on my production server?
+
+            I have error "Table '...' already exists"
+
+            Command "php bin/console doctrine:database:drop --force" will remove all my data on production server. :(
+
+
+            •Reply•Share ›
+            −
+            Avatar
+            Victor Bocharsky SfCasts  Дмитрий Ченгаев • 8 months ago
+            Hey Dmitriy,
+
+            Uh oh, you certainly should avoid running this command on production :)
+
+            First of all, you need to understand why this error happened: whether due to bad migration logic or due to developer error like somehow running the same migration twice. When you understand it - you will see what to do next. But here's some possible outcomes for you:
+            - You can skip this migration by marking it as executed with: bin/console doctrine:migrations:version YYYYMMDDHHMMSS --add - this will not execute the migration but just add it to the table, so on the next bin/console doctrine:migrations:migrate call this migration will be skipped. But make sure that all the SQL statements in the skipped migration were already applied. If not - you will need to manually execute missing one.
+            - If that table was created mistakenly and do not hold any data - you can try to remove it manually and re-run the migration again to create it. But it depends on what else operations are supposed to be done that migration, probably just manually removing this table won't be enough.
+
+            So, in any case, it's very bad and you should think about it and try to do your best to avoid this problem in the future, but for now you have to do extra work to make things working. As a tip, you can use bin/console doctrine:query:sql <sql> command to execute any SQL command on your production.
+
+            Cheers!
+
+
+
+
+
+
+
+

@@ -1,0 +1,117 @@
+Bonus! LoggerTrait & Setter Injection
+
+Когда мы приходим к желанию, из разных мест отправлять в Слак сообщения, то возникает снова вопрос
+ повторного использования кода.
+
+Создадим Класс          \App\Service\SlackClient
+            <?php
+
+            namespace App\Service;
+
+            use Nexy\Slack\Client;
+
+            class SlackClient
+            {
+                /**
+                 * @var Client
+                 */
+                private $slack;
+
+                public function __construct(Client $slack)
+                {
+                    $this->slack = $slack;
+                }
+
+                public function sendMessage(string $from, string $message)
+                {
+                    $message = $this->slack->createMessage()
+                        ->from($from)
+                        ->withIcon(':ghost:')
+                        ->setText($message);
+                    $this->slack->sendMessage($message);
+                }
+            }
+
+В методе контроллера   \App\Controller\ArticleController   тогда будем использовать новый Сервис
+               /**
+                 * @Route("/news/{slug}", name="article_show")
+                 */
+                public function show($slug, MarkdownHelper $markdownHelper, SlackClient $slack)
+                {
+                    if ($slug === 'khaaaaaan') {
+                        $slack->sendMessage('Kahn', 'Ah, Kirk, my old friend...');
+                    }
+
+
+Это все будет корректно работать. Далее мы желаем логировать сообщения, и способ это делать, добавить в конструктор Сервиса
+ второй аргумент с тайп-хинтом      LoggerInterface
+ Но можно воспользоваться другим способом     setter injection (Установщик инъекций)
+  Такой способ используется реже, чем передача через конструктор, но иногда имеет смысл при опциональных зависимостях, таких как Логгер.
+   Имеется ввиду, что если Логгер не будет передан, то мы можем написать код так, что он будет работать и выполнять основную функцию.
+ Фрагмент будет выглядеть.
+                /**
+                 * @required
+                 */
+                public function setLogger(LoggerInterface $logger)
+                {
+                    $this->logger = $logger;
+                }
+
+                public function sendMessage(string $from, string $message)
+                {
+                    if ($this->logger) {
+                        $this->logger->info('Beaming a message to Slack!');
+                    }
+
+
+
+Автовайринг в Симфони это не какая-то магия. автовайрятся Конструкторы классов.
+ И чтобы нам указать ему автовайрить дополнительные сеттеры, над объявлением класса нужно добавлять
+            /**
+             * @required
+             */
+
+ Вообще логирование, очень полезная вещь и часто может применяться, и чтобы каждый раз в каждом сервисе не прописывать
+                /**
+                 * @required
+                 */
+                public function setLogger(LoggerInterface $logger)
+                {
+                    $this->logger = $logger;
+                }
+
+  то есть смысл сделать трейт
+                <?php
+
+                namespace App\Helper;
+
+
+                use Psr\Log\LoggerInterface;
+
+                trait LoggerTrait
+                {
+                    /**
+                     * @var LoggerInterface|null
+                     */
+                    private $logger;
+                    /**
+                     * @required
+                     */
+                    public function setLogger(LoggerInterface $logger)
+                    {
+                        $this->logger = $logger;
+                    }
+
+                    private function logInfo(string $message, array $context = [])
+                    {
+                        if ($this->logger) {
+                            $this->logger->info($message, $context);
+                        }
+                    }
+                }
+
+ И его добавлять в нужные классы-сервисы.
+
+
+
+

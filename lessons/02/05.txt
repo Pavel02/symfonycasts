@@ -1,0 +1,123 @@
+debug:container & Cache Config
+
+Подробнее остановимся на
+        knp_markdown:
+            parser:
+                service: markdown.parser.light
+
+Мы получили ключ сервиса markdown.parser.light  из документации, где было сказано, что нам доступно  5 разных сервисов.
+ Но это не просто случайный ключ, который выдумал автор пакета.
+ Все Сервисы находятся внутри объекта, который называется Контейнер.
+ И каждый Сервис имеет внутреннее имя или идентификатор.
+И получается, что  markdown.parser.light  это  id Сервиса внутри контейнера.
+
+Теперь после того как мы ввели конфиг для knp_markdown, то выполнив
+        bin/console debug:autowiring
+ мы увидим, что
+                          Knp\Bundle\MarkdownBundle\MarkdownParserInterface
+                              alias to markdown.parser.light
+                          Michelf\MarkdownInterface
+                              alias to markdown.parser.light
+
+ У MarkdownInterface теперь  alias  markdown.parser.light , а до конфиг файла был   markdown.parser.max
+    т.е. теперь, когда мы будем использовать MarkdownInterface, то Симфони будет передавать нам  Сервис, у которого  id markdown.parser.light
+
+Чтобы увидеть весь список Сервисов в контейнере, нам не достаточно
+        bin/console debug:autowiring
+ а поможет
+        bin/console debug:container --show-private
+ теперь мы получим вывод Всех Сервисов  (id слева,  Классы справа) (внизу маленький фрагмент)
+                      web_profiler.controller.router                                             Symfony\Bundle\WebProfilerBundle\Controller\RouterController
+                      web_profiler.csp.handler                                                   Symfony\Bundle\WebProfilerBundle\Csp\ContentSecurityPolicyHandler
+                      web_profiler.debug_toolbar                                                 Symfony\Bundle\WebProfilerBundle\EventListener\WebDebugToolbarListener
+                      web_server.command.server_log                                              Symfony\Bundle\WebServerBundle\Command\ServerLogCommand
+                      web_server.command.server_run                                              Symfony\Bundle\WebServerBundle\Command\ServerRunCommand
+
+ В действительности, большинство этих Сервисов внутренние, а список используемых в
+            debug:autowiring
+
+Небольшой вывод:
+    1. В Контейнере есть очень много Сервисов, и у каждого есть id.
+    2. 99% времени используются Сервисы из списка   debug:autowiring  и к этим Сервисам имеется легкий доступ.
+
+
+Вернемся к методу внутри Контроллера
+        dump($cache); die();
+ Мы получим вывод на экран
+                ArticleController.php on line 56:
+                TraceableAdapter {#436 ▼
+                  #pool: FilesystemAdapter {#433 ▼
+                    -createCacheItem: Closure {#435 ▶}
+                    -mergeByLifetime: Closure {#437 ▶}
+                    -namespace: ""
+                    -namespaceVersion: ""
+                    -versioningIsEnabled: false
+                    -deferred: []
+                    #maxIdLength: null
+                    #logger: Logger {#156 ▶}
+                    -directory: "/var/www/my-repo/the_spacebar/var/cache/dev/pools/hKfzraT+RC/"
+                    -tmp: null
+                  }
+                  -calls: []
+                }
+Мы видим    TraceableAdapter  а внутри  FilesystemAdapter
+ т.е. сейчас наш кэш сохраняется в файловую систему.
+
+Кэширование в Симфони идет из коробки и обеспечивается FrameworkBundle, поэтому откроем
+                    config/packages/framework.yaml
+и фрагмент файла конфига
+                   cache:
+                        # Put the unique name of your app here: the prefix seed
+                        # is used to compute stable namespaces for cache keys.
+                        #prefix_seed: your_vendor_name/app_name
+
+                        # The app cache caches to the filesystem by default.
+                        # Other options include:
+
+                        # Redis
+                        #app: cache.adapter.redis
+                        #default_redis_provider: redis://localhost
+
+                        # APCu (not recommended with heavy random-write workloads as memory fragmentation can cause perf issues)
+                        #app: cache.adapter.apcu
+
+Здесь есть небольшая документация, но для получения полного примера, можем выполнить
+            bin/console config:dump framework
+  и в секции   cache  есть описание различных ключей.
+
+Увидеть текущий конфиг, можно с помощью консольной команды
+            ./bin/console debug:config framework
+
+
+Можно легко переконфигурировать Сервис. Например в файле
+        config/packages/framework.yaml
+Уберем комментарий для
+                app: cache.adapter.apcu
+На самом деле этот  Сервис   cache.adapter.apcu  уже существует в Контейнере.
+
+Также  кроме этой команды
+        ./bin/console cache:clear
+ еще
+        ./bin/console cache:pool:clear cache.app
+
+
+TIP: возможно придется  sudo apt-get install php-apcu     и перезапуск сервера.
+
+
+
+Теперь, если распечатаем переменную   $cache , то в ней поменялся   pool
+            ArticleController.php on line 56:
+            TraceableAdapter {#300 ▼
+              #pool: ApcuAdapter {#297 ▼
+                -createCacheItem: Closure {#299 ▶}
+                -mergeByLifetime: Closure {#301 ▶}
+                -namespace: "hKfzraT+RC:"
+                -namespaceVersion: ""
+                -versioningIsEnabled: false
+                -deferred: []
+                #maxIdLength: null
+                #logger: Logger {#147 ▶}
+              }
+              -calls: []
+            }
+

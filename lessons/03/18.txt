@@ -1,0 +1,62 @@
+Activating Timestampable
+
+ Активируем Timestampable  в конфиге  /config/packages/stof_doctrine_extensions.yaml
+            stof_doctrine_extensions:
+                default_locale: en_US
+                orm:
+                    default:
+                        sluggable: true
+                        timestampable: true
+
+ В сущности  Article  над свойствами добавим аннотации  @Gedmo\Timestampable
+            /**
+             * @ORM\Column(type="datetime")
+             * @Gedmo\Timestampable(on="create")
+             */
+            private $createdAt;
+
+            /**
+             * @ORM\Column(type="datetime")
+             * @Gedmo\Timestampable(on="update")
+             */
+            private $updatedAt;
+
+ Теперь можем заново загрузить фикстуры
+                bin/console doctrine:fixtures:load
+
+ Для проверки, что все отработало можем выполнить SQL прямо в консоли.
+                php bin/console doctrine:query:sql 'SELECT * FROM article'
+
+ Отлично, что теперь при обновлениях статей будет автоматически обновляться   updated_at.
+
+
+*** The TimestampableEntity Trait ***
+
+ Можно проще использовать Timestampable , без создания в классе Article , дополнительных полей  createdAt, updatedAt ,
+
+ Для этого удаляем поля    createdAt, updatedAt    и все сетеры, гетеры для них.
+
+ И в класс добавляем использование трейта  TimestampableEntity
+                 class Article
+                 {
+                     use TimestampableEntity;
+                     .....................
+  В этом трейте содержатся уже нужные нам    createdAt, updatedAt
+
+ И сейчас если попробовать создать миграцию для проверки изменений в сущности Article
+            php bin/console make:migration
+  Будет вывод
+            The database schema and the application mapping information are already in sync.
+
+ Можем еще раз загрузить фикстуры (все корректно отработает).
+             php bin/console doctrine:fixtures:load
+
+
+
+
+
+
+
+
+
+

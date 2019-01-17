@@ -1,0 +1,118 @@
+Желаем добавить логирование в Сервис MarkdownHelper
+ В консоли выполним команду
+                bin/console debug:autowiring
+ в выводе команды видим, что нам доступен Сервис LoggerInterface
+ Добавим его в конструктор
+             public function __construct(AdapterInterface $cache, MarkdownInterface $markdown, LoggerInterface $logger)
+                {
+                    $this->cache = $cache;
+                    $this->markdown = $markdown;
+                    $this->logger = $logger;
+                }
+ А в метод parse()   добавим небольшое логирование
+                    public function parse(string $source): string
+                    {
+                        if (stripos($source, 'bacon') !== false) {
+                            $this->logger->info('They are talking about bacon again!');
+                        }
+                    .........................
+
+ После перезагрузки в браузере страницы     http://127.0.0.1:8000/news/why-asteroids-taste-like-bacon
+  ,чтобы проверить, что логирование заработало переходим  -> profiler  -> Logs  ->  Info & Errors
+
+
+Если еще раз посмотреть вывод команды      bin/console debug:autowiring   то
+  увидим, что   LoggerInterface  это алиас  monolog.logger
+
+Чтобы узнать еще больше информации о Сервисе, можно выполнить
+                            bin/console debug:container monolog.logger
+
+
+Чтобы увидеть все сервисы, содержащие слово 'log'  выполним
+                               bin/console debug:container --show-private log
+ и в результатах вывода увидим, что есть много различных Сервисов monolog.logger
+                  [21] monolog.logger.request
+                  [22] monolog.logger.console
+                  [23] monolog.logger.cache
+                  [24] monolog.logger.profiler
+                  [25] monolog.logger.php
+                  [26] monolog.logger.event
+                  [27] monolog.logger.router
+                  [28] monolog.logger.debug
+Дело вот в чем: Симфони для логирования использует библиотеку Monolog, у которой есть фичи Каналы (наподобие Категорий).
+ Вместо одного логирования можно использовать много и у каждого есть уникальное имя - называемаое Каналом.
+  Основное логирование использует канал, называемый     app
+  При этом много частей Симфони использует другие каналы, такие как   request   или   event  .
+
+Если посмотреть файл      config/packages/dev/monolog.yaml          можно увидеть различное поведение в Каналах
+                    monolog:
+                        handlers:
+                            main:
+                                type: stream
+                                path: "%kernel.logs_dir%/%kernel.environment%.log"
+                                level: debug
+                                channels: ["!event"]
+                            # uncomment to get logging in your browser
+                            # you may have to allow bigger header sizes in your Web server configuration
+                            #firephp:
+                            #    type: firephp
+                            #    level: info
+                            #chromephp:
+                            #    type: chromephp
+                            #    level: info
+                            console:
+                                type: console
+                                process_psr_3_messages: false
+                                channels: ["!event", "!doctrine", "!console"]
+
+Из конфига выше видно, что большинство логов сохраняется в файл   dev.log
+ но события канала   event   в этот файл не сохраняются.
+
+Все отлично, но как получить доступ к одному из этих объектов Logger?
+ т.е. когда мы используем тайп-хинт LoggerInterface, то это дает нам только      main logger.
+Что если нужен другой логгер, например логер канала    event?
+
+******
+Создание нового канала логера (с именем markdown например).
+ Монолог интересен тем, что обычно не имеет одного главного конфиг файла. А имеет отдельные конфиги для dev и prod.
+ В зависимости от среды поразному логируем.
+ Создадим новый канал, доступный для всех сред.
+ Создаем файл        /config/packages/monolog.yaml
+        monolog:
+            channels: ['markdown']
+
+ Новый канал готов. чтобы проверить набираем команду
+                        bin/console debug:container log
+  И в ее выводе увидим, что стал доступен новый Сервис    monolog.logger.markdown.
+              [21] monolog.logger.request
+              [22] monolog.logger.console
+              [23] monolog.logger.cache
+              [24] monolog.logger.profiler
+              [25] monolog.logger.php
+              [26] monolog.logger.event
+              [27] monolog.logger.router
+              [28] monolog.logger.debug
+              [29] monolog.logger.markdown
+
+И теперь нужно получить нестандартный Сервис
+  В конфиг файле для окружения dev       config/packages/dev/monolog.yaml
+   добавим логирование нового канала в отдельный файл.
+                        markdown_logging:
+                            type: stream
+                            path: "%kernel.logs_dir%/markdown.log"
+                            level: debug
+                            channels: ["markdown"]
+Но пока еще не заработает.
+ В конфиг файле         /config/services.yaml  укажем в самом конце
+        App\Service\MarkdownHelper:
+            arguments:
+                $logger: '@monolog.logger.markdown'
+
+
+ '@monolog.logger.markdown' - говорит, что нам требуется передать в переменную Сервис с этим идентификатором.
+ И также теперь появится файл           /var/log/markdown.log   куда будет писаться лог (этот файл указывали в monolog.yaml)
+
+
+
+
+

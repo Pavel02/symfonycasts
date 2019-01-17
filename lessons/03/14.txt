@@ -1,0 +1,92 @@
+Fixtures: Seeding Dummy Data!
+
+Сейчас создаются новые одинаковые статьи при переходе по роуту   /admin/article/new
+
+*** Installing DoctrineFixturesBundle ***
+  Установим библиотеку
+                                    composer require orm-fixtures --dev
+  Данная библиотека будет помогать загружать фейковые данные в режиме разработки, которые не нужны на продакшене.
+
+
+*** Generating Fixture with make:fixtures ***
+  Для генерации в консоли:
+                                    php bin/console make:fixtures
+   В ходе выполнения назовем    > ArticleFixtures
+
+                 The class name of the fixtures to create (e.g. AppFixtures):
+                 > ArticleFixtures
+
+                 created: src/DataFixtures/ArticleFixtures.php
+
+
+                  Success!
+
+
+                 Next: Open your new fixtures class and start customizing it.
+                 Load your fixtures by running: php bin/console doctrine:fixtures:load
+                 Docs: https://symfony.com/doc/master/bundles/DoctrineFixturesBundle/index.html
+
+  Будет создан класс шаблон для будущего в файле      /src/DataFixtures/ArticleFixtures.php
+            <?php
+
+            namespace App\DataFixtures;
+
+            use Doctrine\Bundle\FixturesBundle\Fixture;
+            use Doctrine\Common\Persistence\ObjectManager;
+
+            class ArticleFixtures extends Fixture
+            {
+                public function load(ObjectManager $manager)
+                {
+                    // $product = new Product();
+                    // $manager->persist($product);
+
+                    $manager->flush();
+                }
+            }
+
+
+ 1 шаг.
+   Пишем код для создания и сохранения объектов.
+ 2 шаг.
+   Запускаем консольную команду, которая выполнит все классы с Фикстурами
+                ./bin/console doctrine:fixtures:load
+   при каждом запуске БД будет очищаться и будут загружаться новые фейковые данные.
+
+
+*** Writing the Fixtures ***
+ из /src/Controller/ArticleAdminController.php   код для создания статьи переносим в   /src/DataFixtures/ArticleFixtures.php
+
+
+*** Creating Multiple Articles ***
+ Для создания многих статей сделаем цикл. В каждом в конце будет подготовка запроса, а вот выполнение в БД одно после цикла
+                            ..............
+                            $manager->persist($article);
+                        }
+                        $manager->flush();
+
+*** BaseFixture Class for Cooler Looping ***
+  Через цикл выше конечно же все будет работать, но можем улучшить.
+
+  Создадим абстрактный класс, который станет базовым и будет содержать вспомогательные методы.
+
+
+*** Adding the createMany Method ***
+    в созданном выше абстрактном классе     abstract class BaseFixture
+     создаем метод
+                        protected function createMany(string $className, int $count, callable $factory)
+                        {
+                            for ($i = 0; $i < $count; $i++) {
+                                $entity = new $className();
+                                $factory($entity, $i);
+                                $this->manager->persist($entity);
+                                // store for usage later as App\Entity\ClassName_#COUNT#
+                                $this->addReference($className . '_' . $i, $entity);
+                            }
+                        }
+ Идея метода createMany(string $className, int $count, callable $factory) в том, что
+  передается Класс, кол-во которое хотим создать и колбэк метод, который будет вызываться при создании каждого нового объекта.
+   В нашем случае колбэк метод будет загружать объект данными.
+
+ В завершении снова
+                bin/console doctrine:fixtures:load

@@ -1,0 +1,99 @@
+Installing Bundles with "Average" Docs
+
+Установим Сервис для отправки сообщений в Slack
+ гуглим страницу этого бандла и находим      https://packagist.org/packages/nexylan/slack-bundle
+ По инструкции устанавливаем
+                composer require nexylan/slack-bundle php-http/guzzle6-adapter
+   и была ошибка.
+
+а вот по инструкции из видео .
+            composer require nexylan/slack-bundle php-http/guzzle6-adapter:1.1.1
+
+                composer require nexylan/slack-bundle php-http/guzzle6-adapter:1.1.1
+                Using version ^2.0 for nexylan/slack-bundle
+                ./composer.json has been updated
+                Loading composer repositories with package information
+                Updating dependencies (including require-dev)
+                Restricting packages listed in "symfony/symfony" to "4.1.*"
+
+                Prefetching 17 packages 🎶 💨
+                  - Downloading (100%)
+
+                Package operations: 20 installs, 0 updates, 0 removals
+                  - Installing symfony/options-resolver (v4.1.9): Loading from cache
+                  - Installing psr/http-message (1.0.1): Loading from cache
+                  - Installing php-http/message-factory (v1.0.2): Loading from cache
+                  - Installing clue/stream-filter (v1.4.0): Loading from cache
+                  - Installing php-http/message (1.7.2): Loading from cache
+                  - Installing php-http/promise (v1.0.0): Loading from cache
+                  - Installing php-http/httplug (v1.1.0): Loading from cache
+                  - Installing php-http/client-common (1.8.2): Loading from cache
+                  - Installing php-http/stopwatch-plugin (1.1.0): Loading from cache
+                  - Installing php-http/logger-plugin (v1.0.0): Loading from cache
+                  - Installing php-http/discovery (1.4.0): Loading from cache
+                  - Installing php-http/cache-plugin (v1.5.0): Loading from cache
+                  - Installing guzzlehttp/promises (v1.3.1): Loading from cache
+                  - Installing ralouphie/getallheaders (2.0.5): Loading from cache
+                  - Installing guzzlehttp/psr7 (1.5.2): Loading from cache
+                  - Installing guzzlehttp/guzzle (6.3.3): Loading from cache
+                  - Installing php-http/guzzle6-adapter (v1.1.1): Loading from cache
+                  - Installing php-http/httplug-bundle (1.13.1): Loading from cache
+                  - Installing nexylan/slack (v2.0.0): Loading from cache
+                  - Installing nexylan/slack-bundle (v2.0.1): Loading from cache
+                Writing lock file
+                Generating autoload files
+                Symfony operations: 2 recipes (2a3f9d70cc0535b1051e84358f91ea90)
+                  - Configuring php-http/httplug-bundle (>=1.6): From github.com/symfony/recipes:master
+                  - Configuring nexylan/slack-bundle (>=v2.0.1): From auto-generated recipe
+                Executing script cache:clear [KO]
+                 [KO]
+                Script cache:clear returned with error code 1
+                !!
+                !!  In ArrayNode.php line 228:
+                !!
+                !!    The child node "endpoint" at path "nexy_slack" must be configured.
+                !!
+                !!
+                !!
+                Script @auto-scripts was called via post-update-cmd
+
+
+
+***When composer require Fails***
+  При установке  Composer  вывел ошибку.
+  Означает, что с помощью Рецептов не удалось сконфигурирровать, но при этом установка завершилась успешно и зависимости установлены.
+
+***Configuring the Slack Endpoint***
+ В документации указаны дефолтные настройки, который мы можем положить в любой файл в     /config/packages/
+            nexy_slack:
+
+                # If you want to use an another httplug client service.
+                http:
+                    client: httplug.client
+
+                # The Slack API Incoming WebHooks URL.
+                endpoint:             ~ # Required
+                channel:              null
+                username:             null
+                icon:                 null
+                link_names:           false
+                unfurl_links:         false
+                unfurl_media:         true
+                allow_markdown:       true
+                markdown_in_attachments: []
+
+
+ Создаем файл      /config/packages/nexy_slack.yaml
+   Once you've got it, go to your domain /apps/manage, then search the App Directory for "Incoming Webhooks". Click "Add Configuration" to setup a new webhook: I've already done this.
+   Его содержимое например такое
+            nexy_slack:
+              # The Slack API Incoming WebHooks URL.
+              endpoint: 'https://hooks.slack.com/services/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'
+
+ И не забудем очистить кэш (c версии выше  4.0.5  при добавлении новых конфигов уже не требуется).
+        php bin/console cache:clear
+
+ Если сейчас проверить доступные Сервисы, то пока что в нем не увидим Slack
+        php bin/console debug:autowiring
+ т.е. не будет возможности использовать autowiring  nexy_slack.client  как Сервис
+

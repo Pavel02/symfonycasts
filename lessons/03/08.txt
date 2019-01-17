@@ -1,0 +1,75 @@
+Service Subscriber: Lazy Performance
+
+Обычно контейнер Симфони не создает экземпляр Сервиса, до тех пор пока к этому Сервису не обращается.
+
+*** Twig Extensions: Always Instantiated ***
+ С расширениями для twig ситуация, что при рендеринге шаблона, будет создан экземпляр  AppExtension
+   даже если не используются пользовательские фильтры из него.
+
+ А так как в конструкторе AppExtension мы создаем инстанс MarkdownHelper, то он тоже всегда будет создаваться.
+            public function __construct(MarkdownHelper $helper)
+            {
+                $this->helper = $helper;
+            }
+
+ Для примера на стартовой странице не используется markdown, но все равно будут создаваться инстансы AppExtension  и  MarkdownHelper .
+
+
+*** Creating a Service Subscriber ***
+ Нужно сообщить Симфони, чтобы он нам передавал Сервис MarkdownHelper, но не создавал его инстанс.
+ Первое: сделаем, чтобы наш класс реализовывал интерфейс  ServiceSubscriberInterface
+                       class AppExtension extends AbstractExtension implements ServiceSubscriberInterface
+   данный интерфейс укажет нам обязательно реализовать метод   getSubscribedServices().
+
+ Далее в конструкторе убираем Сервис (MarkdownHelper $helper) , вместо него
+                     public function __construct(ContainerInterface $container)
+
+   и соответственно заменим инициализацию свойства            $this->helper = $helper;
+                $this->container = $container;
+
+
+*** Populating the Container ***
+  Важно, что вот этот ContainerInterface $container  это не большой СервисКонтейнер Симфони с сотнями сервисов.
+   а миниконтейнер и конкретно сейчас он вообще не содержит сервисов.
+   И чтобы указать, какие сервисы он должен содержать используем
+                    public static function getSubscribedServices()
+                    {
+                        return [
+                            MarkdownHelper::class,
+                        ];
+                    }
+    Теперь Симфони подгрузит этот Сервис в наш миниконтейнер, и сделает его доступным для использования.
+     и в нашем пользовательском фильтре для twig будем вызывать его использование:
+                    public function processMarkdown($value)
+                    {
+                        return $this->container
+                            ->get(MarkdownHelper::class)
+                            ->parse($value);
+                    }
+  т.е. теперь Симфони вместо того, чтобы передавать нам сервис MarkdownHelper напрямую,- передает
+   нам контейнер, который уже содержит в себе этот Сервис.
+   И самое главное, что этот сервис не будет инстанцироваться, до тех пор пока мы к нему не обратимся.
+
+
+
+*** Understanding getSubscribedEvents() ***
+  И можно возвращать не только имя Сервиса, но и пару ключ значение.
+           public static function getSubscribedServices()
+             {
+                 return [
+                     'foo' => MarkdownHelper::class,
+                 ];
+             }
+   и после этого сможем вызывать сервис по ключу
+                                public function processMarkdown($value)
+                                {
+                                    return $this->container
+                                        ->get('foo')
+                                        ->parse($value);
+                                }
+
+
+ Для повседневного применения используем внедрение зависимостей, передав каждый сервис в конструктор.
+  Но в некоторых местах, чтобы не снижать производительность, применяем такой трюк, с мини-контейнером.
+
+

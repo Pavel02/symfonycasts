@@ -1,0 +1,133 @@
+Database Migrations
+
+*** Generating a Migration ***
+После успешной создании сущности в консоли, Symfony выводит рекомендацию воспользоваться
+ командой для создания миграции
+            php bin/console make:migration
+ В результате в консоли будет выведено
+                  Success!
+                 Next: Review the new migration "src/Migrations/Version20181228110825.php"
+                 Then: Run the migration with php bin/console doctrine:migrations:migrate
+                 See https://symfony.com/doc/current/bundles/DoctrineMigrationsBundle/index.html
+ Результат это создания файла     src/Migrations/Version20181228110825.php    класс миграции.
+           <?php declare(strict_types=1);
+
+           namespace DoctrineMigrations;
+
+           use Doctrine\DBAL\Schema\Schema;
+           use Doctrine\Migrations\AbstractMigration;
+
+           /**
+            * Auto-generated Migration: Please modify to your needs!
+            */
+           final class Version20181228110825 extends AbstractMigration
+           {
+               public function up(Schema $schema) : void
+               {
+                   // this up() migration is auto-generated, please modify it to your needs
+                   $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
+
+                   $this->addSql('CREATE TABLE article (id INT AUTO_INCREMENT NOT NULL, title VARCHAR(255) NOT NULL, slug VARCHAR(100) NOT NULL, context LONGTEXT DEFAULT NULL, published_at DATETIME DEFAULT NULL, PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE = InnoDB');
+               }
+
+               public function down(Schema $schema) : void
+               {
+                   // this down() migration is auto-generated, please modify it to your needs
+                   $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
+
+                   $this->addSql('DROP TABLE article');
+               }
+           }
+ Внутри этого класса нужный нам SQL код.
+
+
+ Команда    bin/console make:migration    сравнила структуру нашей существующей БД с имеющимися Entity, которые сейчас в проекте.
+  и после был сгенерирован   SQL код, который требуется для обновления БД, чтобы привести ее в соответствие с нашими Entity.
+
+
+***  Executing the Migration  ***
+Для применения миграции используем команду
+            bin/console doctrine:migrations:migrate
+В результате выполнения в консоли будет вывод
+                                                Application Migrations
+                            WARNING! You are about to execute a database migration that could result in schema changes and data loss. Are you sure you wish to continue? (y/n)y
+                            Migrating up to 20181228110825 from 0
+
+                              ++ migrating 20181228110825
+
+                                 -> CREATE TABLE article (id INT AUTO_INCREMENT NOT NULL, title VARCHAR(255) NOT NULL, slug VARCHAR(100) NOT NULL, context LONGTEXT DEFAULT NULL, published_at DATETIME DEFAULT NULL, PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE = InnoDB
+
+                              ++ migrated (0.47s)
+
+                              ------------------------
+
+                              ++ finished in 0.47s
+                              ++ 1 migrations executed
+                              ++ 1 sql queries
+
+Если повторно попробовать выполнить эту же консольную команду для миграций.
+            bin/console doctrine:migrations:migrate
+то ничего уже не произойдет.
+                     Application Migrations
+                    No migrations to execute.
+
+
+*** How Migrations Work ***
+ Статус миграций  смотрим командой
+                bin/console doctrine:migrations:status
+
+ В БД система миграций автоматически создает таблицу    migration_versions
+  В первый раз когда выполняется миграция то в эту таблицу вставляется строка
+   с номером версии миграции.
+  При повторной команде
+                doctrine:migrations:migrate
+    номер самой свежей миграции сравнивается с имеющимися записями в этой таблице   migration_versions.
+   И так ка эта миграция была уже была применена, то повтора не будет.
+
+
+ Каждый раз, когда нужно внести изменения в БД, делаем 2 шага:
+        1. Генерация миграции
+                make:migration
+        2. Выполнение миграции
+                doctine:migrations:migrate
+
+ Классы миграций добавляем в коммит.
+
+
+*** Migration a Second Change ***
+ В классе сущности Article  имеется свойство   slug, это свойство используется для идентификации статьи и оно должно быть уникальным.
+ Добавим в аннотацию к свойству     unique = true
+                /**
+                 * @ORM\Column(type="string", length=100, unique=true)
+                 */
+                private $slug;
+ По данный аннотации Doctrine поймет, что нужно создать уникальный индекс в БД для этого поля
+
+ Для применения этих изменений 1-м шагом создадим миграцию
+                bin/console make:migration
+  создался новый класс миграции. теперь их 2 первый создает таблицу, второй добавляет индекс.
+  И на 2-м шаге выполним миграцию.
+                php bin/console doctrine:migrations:migrate
+    В результате будет информационный вывод в консоль
+                                    Application Migrations
+                WARNING! You are about to execute a database migration that could result in schema changes and data loss. Are you sure you wish to continue? (y/n)y
+                Migrating up to 20181228121439 from 20181228110825
+
+                  ++ migrating 20181228121439
+
+                     -> CREATE UNIQUE INDEX UNIQ_23A0E66989D9B62 ON article (slug)
+
+                  ++ migrated (0.41s)
+
+                  ------------------------
+
+                  ++ finished in 0.41s
+                  ++ 1 migrations executed
+                  ++ 1 sql queries
+
+
+
+
+
+
+

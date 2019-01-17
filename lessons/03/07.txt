@@ -1,0 +1,24 @@
+ago Filter with KnpTimeBundle
+
+*** Printing a DateTime Object in Twig ***
+
+У Сущности Article есть свойство  $publishedAt , нужно его начать выводить в шаблоне.
+ при этом, если статья еще не опубликована, то это поле может быть  null.
+ обычно мы бы воспользовались в шаблоне конструкцией
+            {{ article.publishedAt }}
+ но здесь publishedAt  это объект класс DateTime, поэтому его надо провести через фильтр
+                            {{ article.publishedAt ? article.publishedAt|date('Y-m-d') : 'unpublished' }}
+
+  Большинство фильтров не имеет аргументов. как например наш пользовательский   cached_markdown.
+
+
+*** Installing KnpTimeBundle ***
+  Сейчас дата будет выглядеть  2018-10-25  в таком формате. Было бы читабельнее если бы 5 минут назад, 2 недели назад.
+
+ Установим для этого bundle
+            composer require knplabs/knp-time-bundle
+
+ И в шаблоне применим этот новый фильтр
+                    {{ article.publishedAt ? article.publishedAt|ago : 'unpublished' }}
+
+

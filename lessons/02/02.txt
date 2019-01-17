@@ -1,0 +1,66 @@
+Усаановим Бандл, которого нет по умолчанию в Symfony.
+                        composer require knplabs/knp-markdown-bundle
+
+Если посмотреть git status  то есть одно изменение в   config/bundles.php   добавилось
+                      Knp\Bundle\MarkdownBundle\KnpMarkdownBundle::class => ['all' => true],
+
+
+Если выполнить bin/console debug:autowiring    то увидим, что появились 2 новых интерфейса
+                     Knp\Bundle\MarkdownBundle\MarkdownParserInterface
+                          alias to markdown.parser.max
+                      Michelf\MarkdownInterface
+                          alias to markdown.parser.max
+
+В классе ArticleController   в его метод передадим сервис MarkdownInterface   а внтури создадим новую переменную.
+
+
+        $articleContent = <<<EOF
+Spicy **jalapeno bacon** ipsum dolor amet veniam shank in dolore. Ham hock nisi landjaeger cow,
+lorem proident [beef ribs](https://baconipsum.com/) aute enim veniam ut cillum pork chuck picanha. Dolore reprehenderit
+labore minim pork belly spare ribs cupim short loin in. Elit exercitation eiusmod dolore cow
+turkey shank eu pork belly meatball non cupim.
+Laboris beef ribs fatback fugiat eiusmod jowl kielbasa alcatra dolore velit ea ball tip. Pariatur
+laboris sunt venison, et laborum dolore minim non meatball. Shankle eu flank aliqua shoulder,
+capicola biltong frankfurter boudin cupim officia. Exercitation fugiat consectetur ham. Adipisicing
+picanha shank et filet mignon pork belly ut ullamco. Irure velit turducken ground round doner incididunt
+occaecat lorem meatball prosciutto quis strip steak.
+Meatball adipisicing ribeye bacon strip steak eu. Consectetur ham hock pork hamburger enim strip steak
+mollit quis officia meatloaf tri-tip swine. Cow ut reprehenderit, buffalo incididunt in filet mignon
+strip steak pork belly aliquip capicola officia. Labore deserunt esse chicken lorem shoulder tail consectetur
+cow est ribeye adipisicing. Pig hamburger pork belly enim. Do porchetta minim capicola irure pancetta chuck
+fugiat.
+EOF;
+
+И передадим эту переменную в рендеринг шаблона
+     $html = $this->render('article/show.html.twig', [
+                'title' => ucwords(str_replace('-', ' ', $slug)),
+                'articleContent' => $articleContent,
+                'slug' => $slug,
+                'comments' => $comments,
+            ]);
+
+А в самом шаблоне сделаем вывод переданной переменной.
+                    <div class="article-text">
+                        {{ articleContent }}
+                    </div>
+
+Теперь если мы перезагрузим страницу в браузере, то мы увидим Raw текст как и в самой переменной.
+ Что логично, потому что мы пока еще не использовали markdown
+ Для этого в методе контролера пишем
+                $articleContent = $markdown->transform($articleContent);
+
+Если проверим сейчас страницу в браузере, то мы все равно не увидим желаемого, результата, потому что
+ twig обладает Super-power и защищает нас от XSS атак.
+ Будет, что-то такое
+            <p>Spicy <strong>jalapeno bacon</strong> ipsum dolor amet veniam shank in dolore. Ham hock nisi landjaeger cow, lorem proident <a href="https://baconipsum.com/">beef ribs</a> aute enim veniam ut cillum pork chuck picanha. Dolore reprehenderit labore minim pork belly spare ribs cupim short loin in. Elit exercitation eius
+
+  Чтобы все заработало нужным нам способом в шаблоне  twig  применим функцию  raw
+                    <div class="article-text">
+                        {{ articleContent | raw }}
+                    </div>
+
+
+
+Выводы урока:
+    1. Все в Symfony осуществляется с помощью сервисов.
+    2. Бандлы предоставляют нам эти сервисы и установка новых Бандлов дает нам еще больше доступных Сервисов.

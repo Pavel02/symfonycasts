@@ -1,0 +1,78 @@
+Explore! Environments & Config Files
+
+
+Симфони это просто набор Роутов и набор Сервисов.
+Также файлы в config/packages  конфигурируют  Сервисы.
+
+Поведение нашего приложения меняется в зависимости от Конфигурации.
+ Из коробки имеются среды dev и prod  и еще  test.  Но можно создавать свои.
+
+В dev окружении панель debug, логи, отображение ошибок.
+В prod режиме конфиг оптимизирован для скорости работы, только логи ошибок и скрытие техн подробностей на станице ошибки.
+
+Имеется файл config/bootstrap.php  в нем фрагмент кода
+
+            if (!array_key_exists('APP_ENV', $_SERVER)) {
+                $_SERVER['APP_ENV'] = $_ENV['APP_ENV'] ?? null;
+            }
+
+            if ('prod' !== $_SERVER['APP_ENV']) {
+                if (!class_exists(Dotenv::class)) {
+                    throw new RuntimeException('The "APP_ENV" environment variable is not set to "prod". Please run "composer require symfony/dotenv" to load the ".env" files configuring the application.');
+                }
+
+                $path = dirname(__DIR__).'/.env';
+                $dotenv = new Dotenv();
+
+Там есть проверка переменной
+        if (!isset($_SERVER['APP_ENV'])) {
+
+Переменные окружения всего лишь способ хранения значений конфигурации.
+
+В файле   index.php  переменные окуружения передаются  в  класс ядра
+            $kernel = new Kernel($_SERVER['APP_ENV'], (bool) $_SERVER['APP_DEBUG']);
+
+Переменные окружения хранятся в корне проекта в файле .env   и  по умолчанию режим разработки  dev
+        APP_ENV=dev
+т.е. строка 'dev' передается в класс ядра.
+
+
+
+Этот класс ядра находится непосредственно в нашем приложении
+        src/Kernel.php
+В нем есть метод
+                    public function registerBundles()
+                    {
+                        $contents = require $this->getProjectDir().'/config/bundles.php';
+                        foreach ($contents as $class => $envs) {
+                            if ($envs[$this->environment] ?? $envs['all'] ?? false) {
+                                yield new $class();
+                            }
+                        }
+                    }
+Он загружает все из  /config/bundles.php
+ и проверяет какие bundles загружать для  установленной среды разработки  dev  или  all.
+
+ также метод   protected function configureContainer(ContainerBuilder $container, LoaderInterface $loader)
+   настраивает  Сервисы
+ и метод     protected function configureRoutes(RouteCollectionBuilder $routes)
+     роуты приложения
+
+Константа       const CONFIG_EXTS = '.{php,xml,yaml,yml}';   это просто способ загрузить файл с любым расширением.
+
+Первыми грузятся все файлы из    config/packages/
+
+
+
+Вообще все файлы  .yaml  из   config  едины и их все можно объединить в один большой  .yaml файл.
+
+
+Последний загружаемый файл в Kernel.php  это    services.yaml
+
+
+
+Ну а метод    protected function configureRoutes(RouteCollectionBuilder $routes)
+  загружает все файлы из    config/routes.
+
+
+

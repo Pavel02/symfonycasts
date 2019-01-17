@@ -1,0 +1,105 @@
+MakerBundle
+
+***Installing Maker Bundle***
+ Выполним
+                composer require maker --dev
+ это alias  symfony/maker-bundle
+
+ Основная цель Бандлов давать нам полезные Сервисы.
+   так и здесь: у нас появятся 10 новых консольных команд для генерации
+   выполним  php bin/console
+                    make
+                      make:auth                   Creates a Guard authenticator of different flavors
+                      make:command                Creates a new console command class
+                      make:controller             Creates a new controller class
+                      make:crud                   Creates CRUD for Doctrine entity class
+                      make:entity                 Creates or updates a Doctrine entity class, and optionally an API Platform resource
+                      make:fixtures               Creates a new class to load Doctrine fixtures
+                      make:form                   Creates a new form class
+                      make:functional-test        Creates a new functional test class
+                      make:migration              Creates a new migration based on database changes
+                      make:registration-form      Creates a new registration form system
+                      make:serializer:encoder     Creates a new serializer encoder class
+                      make:serializer:normalizer  Creates a new serializer normalizer class
+                      make:subscriber             Creates a new event subscriber class
+                      make:twig-extension         Creates a new Twig extension class
+                      make:unit-test              Creates a new unit test class
+                      make:user                   Creates a new security user class
+                      make:validator              Creates a new validator and constraint class
+                      make:voter                  Creates a new security voter class
+
+
+***Generating a new Command***
+ С помощью   MakerBundle   создадим нашу собственную консольную команду.
+                    php bin/console make:command
+ Нужно будет ввести имя будущей консольной команды
+             Choose a command name (e.g. app:gentle-puppy):
+             > article:stats
+
+             created: src/Command/ArticleStatsCommand.php
+
+
+              Success!
+
+
+             Next: open your new command class and customize it!
+             Find the documentation at https://symfony.com/doc/current/console.html
+
+ Команда выше создаст для нас файл (рабочий шаблон), для новой консольной команды    \src\Command\ArticleStatsCommand.php
+  Если выполнить     php bin/console    то уже доступно
+             article
+              article:stats               Add a short description for your command
+
+  И она уже будет работать     php bin/console article:stats
+                 [OK] You have a new command! Now make it your own! Pass --help to see your options.
+
+
+*** Service autoconfigure ***
+ Как Симфони информирована о новой консольной команды?
+ Все классы в   \src  загружаются как Сервисы   это указано в конфиг файле    config/services.yaml
+  И по дефолту там же установлено автоконфигурирование
+            autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+  Также класс     \src\Command\ArticleStatscommand.php      экстендит базовый.
+                        <?php
+
+                        namespace App\Command;
+
+                        use Symfony\Component\Console\Command\Command;
+                        use Symfony\Component\Console\Input\InputArgument;
+                        use Symfony\Component\Console\Input\InputInterface;
+                        use Symfony\Component\Console\Input\InputOption;
+                        use Symfony\Component\Console\Output\OutputInterface;
+                        use Symfony\Component\Console\Style\SymfonyStyle;
+
+                        class ArticleStatsCommand extends Command
+                        {
+                            protected static $defaultName = 'article:stats';
+
+                            protected function configure()
+                            {
+                                $this
+                                    ->setDescription('Add a short description for your command')
+                                    ->addArgument('arg1', InputArgument::OPTIONAL, 'Argument description')
+                                    ->addOption('option1', null, InputOption::VALUE_NONE, 'Option description')
+                                ;
+                            }
+
+                            protected function execute(InputInterface $input, OutputInterface $output)
+                            {
+                                $io = new SymfonyStyle($input, $output);
+                                $arg1 = $input->getArgument('arg1');
+
+                                if ($arg1) {
+                                    $io->note(sprintf('You passed an argument: %s', $arg1));
+                                }
+
+                                if ($input->getOption('option1')) {
+                                    // ...
+                                }
+
+                                $io->success('You have a new command! Now make it your own! Pass --help to see your options.');
+                            }
+                        }
+
+

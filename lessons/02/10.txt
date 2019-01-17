@@ -1,0 +1,56 @@
+services.yaml & the Amazing bind
+
+Когда Symfony загружается, требуется знать все Сервисы, которые должны быть в Контейнере.
+ Большинство Сервисов поступает из Бандлов.
+
+Есть файл /config/services.yaml
+ Там имеются настройки по дефолту для всех сервисов, зарегистрированных в этом файле:
+             # default configuration for services in *this* file
+                _defaults:
+                    autowire: true      # Automatically injects dependencies in your services.
+                    autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+                    public: false       # Allows optimizing the container by removing unused services; this also means
+                                        # fetching services directly from the container via $container->get() won't work.
+                                        # The best practice is to be explicit about your dependencies anyway.
+
+Можем для некоторых Сервисов переопределить значения
+            services:
+                _defaults:
+                    autowire: true
+                # ...
+                App\Service\MarkdownHelper:
+                    autowire: false
+
+Также в этом файле есть
+              App\:
+                    resource: '../src/*'
+                    exclude: '../src/{DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
+ Это делает все классы в src/ доступными как Сервисы в Контейнере (за указанными исключениями).
+
+При создании классов в src/  они будут становиться доступными как сервисы.
+ За этим можно отслеживать с помощью:
+                    bin/console debug:autowiring
+
+Несмотря на большой список доступных Сервисов, важно при этом, что
+  Сервисы будут инстанцированы, только когда мы будем ими пользоваться.
+Также важно, что все Сервисы в контейнере инстанцируются максимум Один раз за request,
+ даже если разные части приложения будут пользоваться одним и тем же методом.
+
+
+Если требуется сконфигурировать отдельный сервис, то в самом низу файла     /config/services.yaml
+  прописываем имя класса (полный неймспейс) и ниже него указываем настройки (как делали с Хелпером).
+                    App\Service\MarkdownHelper:
+                        arguments:
+                            $logger: '@monolog.logger.markdown'
+
+
+
+В дефолтных настройках можно использовать ключ       bind
+                            # setup special, global autowiring rules
+                            bind:
+                                $markdownLogger: '@monolog.logger.markdown'
+   тогда в любом месте программы, если будет встречаться переменная $markdownLogger   ,  то в нее будет передан   Сервис.
+
+
+
+
