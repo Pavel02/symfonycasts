@@ -1,0 +1,50 @@
+Owning Vs Inverse Relations
+
+Одно и то же отношение имеет два разных вида  Comment и Article.
+ это many to one  и one to many  одновременно с какой стороны смотреть.
+
+
+*** Set the Inverse Side ***
+ В классе фикстур   /src/DataFixtures/ArticleFixtures.php
+  задаем комментарии
+            $comment1->setArticle($article);
+            .................
+            $comment2->setArticle($article);
+            ................
+
+  Но можем и
+                $article->addComment($comment1);
+                $article->addComment($comment2);
+
+
+*** Synchronizing the Owning Side ***
+
+
+*** Owning Versus Inverse ***
+   У каждого отношения есть 2 стороны: одна сторона известна как владеющая сторона отношений.
+    Вторая как обратная стороная отношений.
+
+   Для отношений  ManyToOne and OneToMany  Владеющая сторона это всегда  ManyToOne сторона.
+
+   т.е. Сторона Владелец, это та, где в БД появляется фактический столбец.
+    Так таблица comment  будет иметь столбец  article_id.
+     а  Article.comments  это обратная сторона.
+
+
+***  The Inverse Side is Optional ***
+ Обратная сторона отношений даже не обязательна.
+  Команда   make:entity  уточняла, создавать ли ее.
+
+  Можем удалить из Article все комментарии, но связь останет существовать и ее можно использовать со стороны владельца Comment.
+   просто не смогли бы использовать   $article->getComments()
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,58 @@
+Awesome Random Fixtures
+
+ сейчас в ArticleFixtures  создается 10 статей
+
+ И сейчас система ссылок на них от 0 до 9
+        $comment->setArticle($this->getReference(Article::class.'_'.$this->faker->numberBetween(0, 9)));
+
+ Сделаем связь комментов со случайной статьей. для это в CommentFixtures.php
+            $comment->setArticle($this->getReference(Article::class.'_'.$this->faker->numberBetween(0,9)));
+
+ Пересоздать
+            bin/console doctrine:fixtures:load
+
+
+*** Making this Random Reference System Reusable ***
+
+
+  В /src/DataFixture/BaseFixture.php   добавим свойство и метод.
+
+                private $referencesIndex = [];
+
+                protected function getRandomReference(string $className) {
+                    if (!isset($this->referencesIndex[$className])) {
+                        $this->referencesIndex[$className] = [];
+                        foreach ($this->referenceRepository->getReferences() as $key => $ref) {
+                            if (strpos($key, $className.'_') === 0) {
+                                $this->referencesIndex[$className][] = $key;
+                            }
+                        }
+                    }
+                    if (empty($this->referencesIndex[$className])) {
+                        throw new \Exception(sprintf('Cannot find any references for class "%s"', $className));
+                    }
+                    $randomReferenceKey = $this->faker->randomElement($this->referencesIndex[$className]);
+                    return $this->getReference($randomReferenceKey);
+                }
+
+  В этот метод передаем Класс и он находит для него случайную статью.
+
+
+
+
+Есть проблем того, что сейчас фикстуры загружаются по алфавиту, но чтобы указать какие первые, то
+                public function getDependencies()
+                {
+                    return [
+                        ArticleFixtures::class
+                    ];
+                }
+
+
+
+
+
+
+
+
+

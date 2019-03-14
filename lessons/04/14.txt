@@ -1,0 +1,118 @@
+Query Joins & Solving the N+1 Problem
+
+  Сейчас наш поисковый запрос не отображается в поле поиска. Это легко исправить в шаблоне.
+                    value="{{ app.request.query.get('q') }}"
+
+  Откуда взялась эта переменная приложения?
+  При использовании Twig вместе с Symfony   имеется одна Глобальная переменная  app
+
+    Если в консоли ввести
+                php bin/console debug:twig
+    то вывод нам об этом расскажет.
+            Globals
+            -------
+
+             * app = object(Symfony\Bridge\Twig\AppVariable)
+
+    Он находится здесь   vendor/symfony/twig-bridge/AppVariable.php
+     У этого класса есть много полезных методов:
+                getToken()
+                getUser()
+                getRequest()
+                getSession()
+                getEnvironment()
+                getDebug()  и т.д.
+     также есть   'flashes' для отображения временных сообщений.
+
+
+
+***  The Twig For-Else Feature  ***
+    Если не найден комментарий, то нужно выводить сообщение пользователю.
+    Для этого добавим в шаблон, в конец цикла
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">
+                                            No comments found
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+
+
+
+*** Adding a Join  ***
+  Сейчас поиск по Автору и комментарию.
+  Для того, чтобы нам еще делать поиск по названию статьи, нам нужно присоединить
+   другую таблицу с помощью   JOIN.
+   В нашем случае в файле репозитория    src/Repository/CommentRepository.php
+
+                            public function findAllWithSearch(?string $term)
+                            {
+                                $qb = $this->createQueryBuilder('c')
+                                    ->innerJoin('c.article', 'a');
+
+
+  с.article  ссылается на свойствой  article в таблице Comment
+                class Comment
+                {
+                .......................
+                    /**
+                     * @ORM\ManyToOne(targetEntity="App\Entity\Article", inversedBy="comments")
+                     * @ORM\JoinColumn(nullable=false)
+                     */
+                    private $article;
+  Благодаря этому нам не нужно явно прописывать     ON article.id = comment.article_id
+
+ После того, как добавили JOIN теперь можем ссылаться на   article   в запросе.
+
+                      /**
+                         * @param string|null $term
+                         * @return Comment[]
+                         */
+                        public function findAllWithSearch(?string $term)
+                        {
+                            $qb = $this->createQueryBuilder('c')
+                                ->innerJoin('c.article', 'a');
+
+                            if ($term) {
+                                $qb->andWhere('c.content LIKE :term OR c.authorName LIKE :term OR a.title LIKE :term')
+                                    ->setParameter('term', '%' . $term . '%')
+                                ;
+                            }
+                            return $qb
+                                ->orderBy('c.createdAt', 'DESC')
+                                ->getQuery()
+                                ->getResult()
+                                ;
+                        }
+
+  Вообще построение запроса в query builder не сильно отличается от построенния вручную.
+
+
+***  Solving the N+1 (Extra Queries) Problem  ***
+ Сейчас при выводе комментариев к статьям к БД продолжает генерироваться лишние запросы. Все потому что ДАЖЕ когда мы сделали
+                                        $qb = $this->createQueryBuilder('c')
+                                            ->innerJoin('c.article', 'a');
+   то из article  берутся только нужные поля в данном запросе.
+
+   Добавим в
+            $qb = $this->createQueryBuilder('c')
+                        ->innerJoin('c.article', 'a')
+                        ->addSelect('a');
+   ->addSelect('a')  - говорит, что нужно вернуть все поля из присоединенной таблицы.
+
+
+ Таким образом, если на вашей странице много запросов к БД, значит вероятно Доктрина делает дополнительные запросы через relationship.
+  Просто добавьте   ->addSelect  , чтобы получить все данные сразу.
+
+
+
+
+
+
+
+
+
+
+
+
+

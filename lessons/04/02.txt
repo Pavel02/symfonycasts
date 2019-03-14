@@ -1,0 +1,145 @@
+Adding the ManyToOne Relation
+
+ Каждая Статья может иметь много комментариев, и один комментарий может принадлежать только одной Статье.
+
+ В рамках БД у таблицы Comment должно быть поле article_id
+
+
+*** Generating the Relationship ***
+ Для добавления нового поля, воспользуемся как и ранее генератором
+            bin/console make:entity
+ Выбираем, что Сущность Comment, а новое поле не articleId (как может показаться логичным),
+  а поле           article
+  псевдо тип его        relation
+ При указании типа    relation, запустится мастер настройки отношений м/у таблицами.
+  Укажем  с каким классом должна быть связана сущность Comment
+        Article.
+   Далее выбираем один из 4 видов соответсвия  ManyToOne, OneToMany, ManyToMany and OneToOne.
+        ManyToOne
+   Укажем, что поле article_id не может быть   null, потому что каждый коммент должен быть привязан к определенной статье.
+
+
+*** Generating the Other (Inverse) Side of the Relation ***
+  Важный вопрос нужно ли в сущность  Article  добавлять новое поле??
+  Если добавим, то у нас будет возможность получить все комменты к статье, указав в коде
+            $article->getComments()
+   и нам будет удобно использовать, для рендеринга комментариев к статье.
+
+   Зачастую удобно иметь отношения между таблицами с двух сторон.
+
+
+
+   Будет интерактив вида:
+                 Class name of the entity to create or update (e.g. DeliciousPizza):
+                 > Comment
+
+                 Your entity already exists! So let's add some new fields!
+
+                 New property name (press <return> to stop adding fields):
+                 > article
+
+                 Field type (enter ? to see all types) [string]:
+                 > relation
+
+                 What class should this entity be related to?:
+                 > Article
+
+                What type of relationship is this?
+                 ------------ -----------------------------------------------------------------
+                  Type         Description
+                 ------------ -----------------------------------------------------------------
+                  ManyToOne    Each Comment relates to (has) one Article.
+                               Each Article can relate/has to (have) many Comment objects
+
+                  OneToMany    Each Comment relates can relate to (have) many Article objects.
+                               Each Article relates to (has) one Comment
+
+                  ManyToMany   Each Comment relates can relate to (have) many Article objects.
+                               Each Article can also relate to (have) many Comment objects
+
+                  OneToOne     Each Comment relates to (has) exactly one Article.
+                               Each Article also relates to (has) exactly one Comment.
+                 ------------ -----------------------------------------------------------------
+
+                 Relation type? [ManyToOne, OneToMany, ManyToMany, OneToOne]:
+                 > ManyToOne
+
+                 Is the Comment.article property allowed to be null (nullable)? (yes/no) [yes]:
+                 > no
+
+                 Do you want to add a new property to Article so that you can access/update Comment objects from it - e.g. $article->getComments()? (yes/no) [yes]:
+                 >
+
+                 A new property will also be added to the Article class so that you can access the related Comment objects from it.
+
+                 New field name inside Article [comments]:
+                 >
+
+                 Do you want to activate orphanRemoval on your relationship?
+                 A Comment is "orphaned" when it is removed from its related Article.
+                 e.g. $article->removeComment($comment)
+
+                 NOTE: If a Comment may *change* from one Article to another, answer "no".
+
+                 Do you want to automatically delete orphaned App\Entity\Comment objects (orphanRemoval)? (yes/no) [no]:
+                 > no
+
+                 updated: src/Entity/Comment.php
+                 updated: src/Entity/Article.php
+
+                 Add another property? Enter the property name (or press <return> to stop adding fields):
+                 >
+
+
+                  Success!
+
+
+                 Next: When you're ready, create a migration with make:migration
+
+
+
+*** Looking at the Entities ***
+
+ Теперь если посмотреть сущность Comment в ней добавилось свойство  article
+                /**
+                 * @ORM\ManyToOne(targetEntity="App\Entity\Article", inversedBy="comments")
+                 * @ORM\JoinColumn(nullable=false)
+                 */
+                private $article;
+
+ А в сущности Article будет создано
+                    /**
+                     * @ORM\OneToMany(targetEntity="App\Entity\Comment", mappedBy="article")
+                     */
+                    private $comments;
+
+
+*** The ArrayCollection Object ***
+  В конструкторе Article сгенерировалось
+                    public function __construct()
+                    {
+                        $this->comments = new ArrayCollection();
+                    }
+
+  с объектом ArrayCollection  приминительна работа, как с обычным массивом.
+
+
+*** ManyToOne Versus OneToMany ***
+  На самом деле OneToMany и ManyToOne  описывает одни и те же отношения, только с разных
+   сторон сущностей.
+
+
+*** Generating the Migration ***
+ Если посмотреть код новых файлов миграций, то в таблицах будут созданы свойства article_id и comment_id  и внешний ключ между ними.
+
+Создаем миграцию
+        bin/console make:migration
+
+Чтобы применить миграцию
+         bin/console doctrine:migrations:migrate
+
+
+
+
+
+

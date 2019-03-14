@@ -1,0 +1,125 @@
+The Twig Extensions Library
+
+Для вывода всех комментариев по роуту admin/comments  нужно получить все комментарии
+
+Мы могли бы использовать     ->findAll()   но мы сразу сделаем с сортировкой и для этого
+ сделаем поиск через findBy
+            $comments = $repository->findBy([], ['createdAt' => 'DESC']);
+ а в метод    render() передадим эти комментарии.
+
+В контроллере получится метод
+            class CommentAdminController extends Controller
+            {
+                /**
+                 * @Route("/admin/comment", name="comment_admin")
+                 */
+                public function index(CommentRepository $repository)
+                {
+                    $comments = $repository->findBy([], ['createdAt' => 'DESC']);
+                    return $this->render('comment_admin/index.html.twig', [
+                        'comments' => $comments,
+                    ]);
+                }
+            }
+
+В шаблон    index.html.twig    добавим  html с классами bootstrap.
+                {% extends 'content_base.html.twig' %}
+
+                {% block title %}Manage Comments{% endblock %}
+
+                {% block content_class %}{{ parent() }} show-article-container-border-green{% endblock %}
+
+                {% block content_body %}
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h1>Manage Comments</h1>
+
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Article</th>
+                                        <th>Author</th>
+                                        <th>Comment</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for comment in comments %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{ path('article_show', {slug: comment.article.slug}) }}">
+                                                    {{ comment.article.title }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                {{ comment.authorName }}
+                                            </td>
+                                            <td style="width: 20%;">
+                                                {{ comment.content }}
+                                            </td>
+                                            <td>
+                                                {{ comment.createdAt|ago }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endblock %}
+
+Если проверим, результат выполнения, то абсолютно все комменты будут выведены.
+ Но при выполнении было сделано 11 запросов к БД,
+
+
+ ***  The N+1 Query Problem ***
+  Первый запрос из 11 это  выберете все комментарии и БД.
+   но поскольку мы в цикле перебираем комментарии и извлекаем данные из связной статьи, то для
+    получения этих данных выполняется дополнительный запрос.
+  т.е. В системе пока что 10 статей у каждой 10 комментариев. Вот 11 запросов.
+
+
+*** Installing Twig Extensions ***
+ Также есть проблема, что некоторые комментарии могут быть длинными. Хотелось бы выводить превью.
+
+  На офф сайте твига   https://twig.symfony.com/doc/2.x/   в разделе документации мы не найдем готового фильтра.
+  Сами тоже писать не будем.
+  Загуглим     Twig extensions  и найдем доку к библиотеке   https://twig-extensions.readthedocs.io/en/latest/
+
+  Ранее уже видели, что если нам требуется создать пользовательскую функцию  twig  или  фильтр, то
+   нужно создавать класс    Twig extension. но мы нашли просто библиотеку.
+
+  В консоли добавим в зависимость
+            composer require twig/extensions
+
+
+*** Activating the Twig Extension ***
+ Важно, что это просто библиотека, она не является  бандлом.
+ Библиотека предоставит нам полезные классы, но не зарегистрирует их как расширения.
+
+ Хотя при этом система рецептов создаст например файл конфига
+                config/packages/twig_extensions.yaml
+
+ В этом файле конфига, чтобы включить нужное расширение, просто раскомментируем его.
+        services:
+            _defaults:
+                public: false
+                autowire: true
+                autoconfigure: true
+
+            # Uncomment any lines below to activate that Twig extension
+            #Twig\Extensions\ArrayExtension: ~
+            #Twig\Extensions\DateExtension: ~
+            #Twig\Extensions\IntlExtension: ~
+            Twig\Extensions\TextExtension: ~
+
+И в шаблоне твига /templates/comment_admin/index.html.twig   можем использовать новые фильтры
+                                                 <td style="width: 20%;">
+                                                    {{ comment.content|truncate }}
+                                                </td>
+
+
+
+Чтобы увидеть все доступные функции фильтры твига
+                             php bin/console debug:twig
+ В разделе Filters   например нам стал доступен truncate

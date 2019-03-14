@@ -1,0 +1,67 @@
+Fixture References & Relating Objects
+
+ Сейчас класс   /src/DataFixtures/ArticleFixtures.php
+  создает и статьи и комментарии к ним. Это не гуд.
+
+ Из ArticleFixtures удалим весь код, отвечающий за создание комментариев.
+                            $comment1 = new Comment();
+                            $comment1->setAuthorName('Mike Ferengi');
+                            $comment1->setContent('I ate a normal rock once. It did NOT taste like bacon!');
+                            $comment1->setArticle($article);
+                            $manager->persist($comment1);
+
+                            $comment2 = new Comment();
+                            $comment2->setAuthorName('Mike Ferengi');
+                            $comment2->setContent('Woohoo! I\'m going on an all-asteroid diet!');
+                            $comment2->setArticle($article);
+                            $manager->persist($comment2);
+
+
+ Создадим новый класс фикстур CommentFixture , в терминале:
+              bin/console make:fixture
+     с именем    CommentFixture.php
+
+ Внутри напишем код следующего содержания.
+                    <?php
+
+                    namespace App\DataFixtures;
+
+                    use App\Entity\Article;
+                    use App\Entity\Comment;
+                    use Doctrine\Common\Persistence\ObjectManager;
+
+                    class CommentFixture extends BaseFixture
+                    {
+                        protected function loadData(ObjectManager $manager)
+                        {
+                            $this->createMany(Comment::class, 100, function(Comment $comment) {
+                                $comment->setContent(
+                                    $this->faker->boolean ? $this->faker->paragraph : $this->faker->sentences(2, true)
+                                );
+
+                                $comment->setAuthorName($this->faker->name);
+                                $comment->setCreatedAt($this->faker->dateTimeBetween('-1 months', '-1 seconds'));
+
+                                $comment->setArticle($this->getReference(Article::class.'_0'));
+                            });
+
+                            $manager->flush();
+                        }
+                    }
+
+
+*** Using the Reference System ***
+
+ Выполняем для заполнения фикстур
+             bin/console doctrine:fixtures:load
+
+ Можем проверить, что созданы Комментарии прям из консоли
+            php bin/console doctrine:query:sql 'SELECT * FROM comment'
+
+
+*** Relating to Random Articles ***
+  пока что все комментарии связыны с одной статьей.
+  об этом в 07.txt
+
+
+

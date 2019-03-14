@@ -1,0 +1,106 @@
+Twig Block Tricks
+
+ Начнем постепенно создавать раздел Администратора.
+
+ Для этого нового раздела создадим новый класс Контроллера.
+  Сделаем с помощью консольной команды в терминале
+                php bin/console make:controller
+
+  В результате будет создан класс и файл шаблона  твиг.
+             Choose a name for your controller class (e.g. TinyElephantController):
+             > CommentAdminController
+
+             created: src/Controller/CommentAdminController.php
+             created: templates/comment_admin/index.html.twig
+
+
+              Success!
+
+
+             Next: Open your new controller class and add some pages!
+
+
+ В созданном классе CommentAdminController поменяем в аннотации роут.
+  по умолчанию создался "/comment/admin"
+            /**
+             * @Route("/admin/comment", name="comment_admin")
+             */
+            public function index()
+            {
+                return $this->render('comment_admin/index.html.twig', [
+                    'controller_name' => 'CommentAdminController',
+                ]);
+            }
+
+ Теперь если перейдем по адресу    http://127.0.0.1:8000/admin/comment
+  то увидим приветственную страницу шаблона, который автоматически создался.
+
+Удалим лишнее из файла шаблона  /templates/comment_admin/index.html.twig
+ и создадим 6 блоков <div>
+
+                    {% extends 'base.html.twig' %}
+
+                    {% block title %}Manage Comments{% endblock %}
+
+                    {% block body %}
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="show-article-container p-3 mt-4">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <h1>Manage Comments</h1>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endblock %}
+
+ *** Creating a Sub-Layout ***
+  Эти 6 блоков часто используются на нашем сайте, например при выводе статей.
+   И с помощью  twig  мы можем изолировать эту разметку в новый базовый класс.
+
+  Создадим файл   /templates/content_base.html.twig
+                            {% extends 'base.html.twig' %}
+
+                            {% block body %}
+                                <div class="container">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div class="show-article-container p-3 mt-4">
+                                                {% block content_body %}{% endblock %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endblock %}
+
+  Теперь остальные шаблоны могут наследовать этот шаблон.
+
+
+*** Adding a Custom Class to One Template ***
+ Для отображения роута /admin/comments  нужно добавить уникальные элементы в стиле (добавим зеленый бордер).
+  Добавлять будем к  <div> с классом   show-article-container
+   но он располагается внутри общего шаблона  content_base.html.twig
+  Как его изменить только для одного шаблона-наследника?
+  Ответ БЛОК - это почти всегда будет ответом при наследовании в twig
+  Для этого обернем наименования класса в новый блок.
+            <div class="{% block content_class %}show-article-container p-3 mt-4{% endblock %}">
+                {% block content_body %}{% endblock %}
+            </div>
+
+ Это определяет новый блок со значением содержимого по умолчанию, если только наследники не переопределят его значение.
+  В нашем случае мы не хотим переопределить полностью, а хотим только добавить,
+   для этого используем     {{ parent() }}
+
+            {% block content_class %}{{ parent() }} show-article-container-border-green{% endblock %}
+
+
+
+
+
+
+
+

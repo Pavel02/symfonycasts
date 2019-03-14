@@ -1,0 +1,45 @@
+ManyToMany Joins & When to Avoid ManyToMany
+
+
+Для вывода тегов к статьям на главной странице сайта добавились новые запросы к БД INNER JON.
+
+Стать для главной мы получаем из метода в  ArticleReposoitory
+        public function findAllPublishedOrderedByNewest()
+        {
+            return $this->addIsPublishedQueryBuilder()
+                ->orderBy('a.publishedAt', 'DESC')
+                ->getQuery()
+                ->getResult()
+                ;
+        }
+
+Добавим в него leftJoin
+        public function findAllPublishedOrderedByNewest()
+        {
+            return $this->addIsPublishedQueryBuilder()
+                ->leftJoin('a.tags', 't')
+                ->addSelect('t')
+                ->orderBy('a.publishedAt', 'DESC')
+                ->getQuery()
+                ->getResult()
+                ;
+        }
+
+Запросов к БД станет в 2 раза меньше.
+
+
+***  When a ManyToMany Relationship is Not What You Need ***
+
+ Что если мы захотим сохранять дату, когда Статье был дан Тег?
+ Мы можем записать дату создания Тега, дату Статьи.
+  Но не дату, когда Тег стал привязан к Статье.
+  Фктически мы не можем сохранить никаких доп данных об этих отношениях.
+
+  При использовании отношения ManyToMany мы не можем добавить в таблицу доп столбцов.
+
+Важный вопрос перед созданием отношений ManyToMany:
+   Может ли понадобится хранить доп данные об этих связях??
+
+Если ответ ДА, то нужно создать новую сущность ArticleTag. И в этой таблице будут связи:
+     ManyToOne к Article   и      ManyToOne к Tag
+
