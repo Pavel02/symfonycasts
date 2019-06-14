@@ -1,0 +1,27 @@
+version: '3.6'
+services:
+  mysql:           # WORK VERSION
+    image: mysql:5.7
+    networks:
+      - app_network
+    environment:
+      #      MYSQL_USER=root
+      MYSQL_ROOT_PASSWORD: 123456
+    #      MYSQL_HOST=mysql
+    #      MYSQL_DATABASE=bonus2
+    #      POSTGRES_USER: app
+    #      POSTGRES_PASSWORD: secret
+    #      POSTGRES_DB: app
+
+    #    env_file:
+    #      - ./.env
+    ports:
+      - 3306:3306
+    volumes:
+      - ./db/:/var/lib/mysql/
+    restart: unless-stopped
+networks:
+  app_network:
+    driver: bridge
+#volumes:
+#  composer:
