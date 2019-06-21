@@ -53,4 +53,17 @@ class ArticleAdminController extends AbstractController
 
         dd($article);
     }
+
+
+    /**
+     * @Route("admin/article")
+     */
+    public function list(ArticleRepository $articleRepository)
+    {
+        $articles = $articleRepository->findAll();
+
+        return $this->render('article_admin/list.html.twig', [
+            'articles' => $articles
+        ]);
+    }
 }
