@@ -9,8 +9,16 @@
 {% endblock %}
 
 {% block body %}
+    {{ form_start(registrationForm) }}
+        {{ form_widget(registrationForm) }}
+
+        <button class="btn btn-lg btn-primary btn-block" type="submit">
+            Register
+        </button>
+    {{ form_end(registrationForm) }}
+
+    {#
     <form class="form-signin" method="post">
-        {# todo - replace with a Symfony form #}
         <h1 class="h3 mb-3 font-weight-normal">Register</h1>
         <label for="inputName" class="sr-only">Name</label>
         <input type="text" name="name" id="inputName" class="form-control" placeholder="Name" required autofocus>
@@ -28,4 +36,5 @@
             Register
         </button>
     </form>
+    #}
 {% endblock %}
