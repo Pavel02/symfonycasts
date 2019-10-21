@@ -1,27 +1,34 @@
-version: '3.6'
+version: '3.7'
 services:
-  mysql:           # WORK VERSION
-    image: mysql:5.7
-    networks:
-      - app_network
-    environment:
-      #      MYSQL_USER=root
-      MYSQL_ROOT_PASSWORD: 123456
-    #      MYSQL_HOST=mysql
-    #      MYSQL_DATABASE=bonus2
-    #      POSTGRES_USER: app
-    #      POSTGRES_PASSWORD: secret
-    #      POSTGRES_DB: app
-
-    #    env_file:
-    #      - ./.env
+  db:
+    image: mysql
+    command: ["--default-authentication-plugin=mysql_native_password"]
     ports:
-      - 3306:3306
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: symfony4_space_bar
+#      MYSQL_USER: symfony
+#      MYSQL_PASSWORD: symfony
     volumes:
-      - ./db/:/var/lib/mysql/
-    restart: unless-stopped
-networks:
-  app_network:
-    driver: bridge
-#volumes:
-#  composer:
+      - ./docker/.db/:/var/lib/mysql/
+
+  php:
+    build: ./docker/php-fpm
+    ports:
+      - "9000:9001"
+    volumes:
+      - ./:/var/www/symfony
+#      - ./logs/symfony:/var/www/symfony/var/log
+    links:
+      - db
+
+  nginx:
+    build: ./docker/nginx
+    ports:
+      - "80:80"
+    links:
+      - php
+    volumes:
+#      - ./logs/nginx:/var/log/nginx
+      - ./:/var/www/symfony
